@@ -8,23 +8,42 @@
 import Foundation
 
 struct LuckLevel {
-    let scoreRange: ClosedRange<Int>
-    let title: String
-
-    static let levels: [LuckLevel] = [
-        LuckLevel(scoreRange: 0...1, title: "運氣爆炸差"),
-        LuckLevel(scoreRange: 2...3, title: "倒楣透頂"),
-        LuckLevel(scoreRange: 4...5, title: "運氣不佳"),
-        LuckLevel(scoreRange: 6...7, title: "普通水準"),
-        LuckLevel(scoreRange: 8...9, title: "小吉"),
-        LuckLevel(scoreRange: 10...11, title: "中吉"),
-        LuckLevel(scoreRange: 12...13, title: "大吉"),
-        LuckLevel(scoreRange: 14...15, title: "超級好運"),
-        LuckLevel(scoreRange: 16...17, title: "歐皇現世"),
-        LuckLevel(scoreRange: 18...20, title: "運氣之神降臨")
+    static let labels: [String] = [
+        "運氣爆炸差",       //（負值區間：composite < -1.0）
+        "運氣極差",         //（-1.0 ≤ composite < -0.5）
+        "倒楣透頂",         //（-0.5 ≤ composite < 0）
+        "運氣不佳",         // composite in [0,1)
+        "運氣稍差",         // [1,2)
+        "普通水準",         // [2,3)
+        "運氣尚可",         // [3,4)
+        "小吉",             // [4,5)
+        "中吉",             // [5,6)
+        "大吉",             // [6,7)
+        "運氣極好",         // [7,8)
+        "超級好運",         // [8,9)
+        "歐皇現世",         // [9,10)
+        "運氣之神降臨",     // [10,11)
+        "運氣之神降臨ProMax" // composite ≥ 11
     ]
-
-    static func level(for score: Int) -> String {
-        levels.first { $0.scoreRange.contains(score) }?.title ?? "未知"
+    
+    /// 根據安全選項數 (safeScore) 與最終數值 (currentValue) 計算 composite 分數，
+    /// 計算公式：composite = safeScore + log10(currentValue + 1)
+    /// 並依據分數回傳對應的運氣評語
+    static func level(safeScore: Int, currentValue: Int) -> String {
+        let composite = Double(safeScore) + log10(Double(currentValue + 1))
+        
+        if composite < 0 {
+            if composite < -1.0 {
+                return labels[0]  // "運氣爆炸差"
+            } else if composite < -0.5 {
+                return labels[1]  // "運氣極差"
+            } else {
+                return labels[2]  // "倒楣透頂"
+            }
+        } else {
+            // 當 composite 為正時，0~1 區間對應 index 3 ("運氣不佳")
+            let index = min(Int(composite) + 3, labels.count - 1)
+            return labels[index]
+        }
     }
 }
