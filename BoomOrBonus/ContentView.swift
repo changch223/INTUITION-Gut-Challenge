@@ -1,11 +1,3 @@
-//
-//  ContentView.swift
-//  BoomOrBonus
-//
-//  Created by chang chiawei on 2025-03-30.
-//
-
-
 import SwiftData
 import SwiftUI
 
@@ -13,22 +5,37 @@ struct ContentView: View {
     @StateObject private var game = GameLogic()
     @StateObject private var recordManager = GameRecordManager()
     
-    // 原本的已使用次數
     @AppStorage("dailyAttempts") var dailyAttempts = 0
-    
-    // 用於記錄上次重置日期
     @AppStorage("lastResetDate") var lastResetDate: String = ""
-    
-    // **把 maxAttempts 也改用 @AppStorage **
     @AppStorage("maxAttempts") var maxAttempts = 5
     
     @State private var showAlert = false
     @State private var showProbabilities = false
     @State private var showRecords = false
     @State private var showLuckLevelStandards = false
-    
     @State private var hasRecordedResult = false
 
+    @State private var encouragementMessage: String = ""
+    @State private var showEncouragement: Bool = false
+
+    // 14 個鼓勵訊息的 key
+        let encouragementKeys = [
+            "Encouragement1",
+            "Encouragement2",
+            "Encouragement3",
+            "Encouragement4",
+            "Encouragement5",
+            "Encouragement6",
+            "Encouragement7",
+            "Encouragement8",
+            "Encouragement9",
+            "Encouragement10",
+            "Encouragement11",
+            "Encouragement12",
+            "Encouragement13",
+            "Encouragement14",
+        ]
+    
     var body: some View {
         ZStack {
             // 背景漸層
@@ -40,39 +47,68 @@ struct ContentView: View {
             .ignoresSafeArea()
             
             VStack(spacing: 20) {
-                Spacer() // 讓內容更偏向畫面中間
+                Spacer()
                 
                 // 遊戲標題
                 Text("GameTitle")
                     .font(.largeTitle)
                     .bold()
+                    .multilineTextAlignment(.center)
                 
-                // 剩餘遊戲次數顯示
-                Text("\(NSLocalizedString("RemainingAttempts", comment: "剩餘遊戲次數前綴")) \(maxAttempts - dailyAttempts)")
-                    .font(.headline)
+                // 遊戲說明
+                Text(NSLocalizedString("GameDescription", comment: "遊戲說明"))
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
                     .padding(.bottom, 10)
-
+                
+                
+                
                 // 當前數值
                 Text("\(NSLocalizedString("CurrentValue", comment: "當前數值前綴")) \(game.currentValue)")
                     .font(.title)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal)
-
+                    .fontWeight(.semibold)
+                    .foregroundColor(.orange)
+                
                 // 闖關數
                 Text("\(NSLocalizedString("LevelsPassedPrefix", comment: "前綴文字：例如『你已闖了』")) \(game.levelsPassed) \(NSLocalizedString("LevelsPassedSuffix", comment: "後綴文字：例如『關』"))")
                     .font(.title3)
                     .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
                     .padding(.bottom, 10)
-
+                
+                
                 if !game.isGameOver {
                     // 選項按鈕
                     HStack(spacing: 40) {
                         ForEach(game.options.indices, id: \.self) { index in
                             Button(action: {
                                 withAnimation(.spring) {
-                                    game.selectOption(game.options[index])
-                                    AudioManager.shared.playSound(
-                                        game.options[index].isBomb ? "bomb" : "success"
-                                    )
+                                    let selectedOption = game.options[index]
+                                    game.selectOption(selectedOption)
+                                    
+                                    // 延遲 0.1 秒後播放聲音及觸覺回饋，讓動畫同步
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        if selectedOption.isBomb {
+                                            AudioManager.shared.playSound("ButtonFail")
+                                            HapticManager.shared.playError()
+                                        } else {
+                                            AudioManager.shared.playSound("ButtonSuccess")
+                                            HapticManager.shared.playSuccess()
+                                            let randomKey = encouragementKeys.randomElement()!
+                                            encouragementMessage = NSLocalizedString(randomKey, comment: "")
+                                            showEncouragement = true
+                                            
+                                            // 0.5 秒後隱藏鼓勵訊息
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                withAnimation {
+                                                    showEncouragement = false
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }) {
                                 ZStack {
@@ -92,28 +128,43 @@ struct ContentView: View {
                         }
                     }
                     .padding(.top, 10)
-                
+                    
                 } else {
-                    // 遊戲結束畫面
-                    VStack(spacing: 15) {
+                    // 遊戲結束畫面：調整後的結果展示
+                    VStack(spacing: 20) {
                         Text(NSLocalizedString("GameOver", comment: "遊戲結束標題"))
-                                .font(.title)
-                                .bold()
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
                         
-                        Text("\(NSLocalizedString("FinalValue", comment: "最終數值前綴")) \(game.currentValue)")
-                        Text("\(NSLocalizedString("LevelsPassed", comment: "闖關數前綴")) \(game.levelsPassed)")
+                        // 分數卡片：突顯最終數值、闖關數與運氣評分
+                        VStack(spacing: 15) {
+                            Text("\(NSLocalizedString("FinalValue", comment: "最終數值前綴")) \(game.currentValue)")
+                                .font(.title2)
+                                .fontWeight(.semibold)
                             
-                        
-                        // 注意這裡已移除 safeScore，只用 currentValue
-                        Text("\(NSLocalizedString("LuckScore", comment: "運氣評分前綴")) \(LuckLevel.level(currentValue: game.currentValue))")
-                                .padding()
-                                .font(.headline)
+                            Text("\(NSLocalizedString("LevelsPassed", comment: "闖關數前綴")) \(game.levelsPassed)")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Text("\(NSLocalizedString("LuckScore", comment: "運氣評分前綴")) \(LuckLevel.level(currentValue: game.currentValue))")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.orange)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(15)
+                        .shadow(color: .gray.opacity(0.4), radius: 8, x: 0, y: 4)
                         
                         Button(NSLocalizedString("Restart", comment: "重新開始按鈕標題")) {
-                            // 改為比較 dailyAttempts 與 maxAttempts
+                            AudioManager.shared.playSound("Click")
+                            HapticManager.shared.playClick()
+                            
                             if dailyAttempts < maxAttempts {
                                 game.resetGame()
-                                dailyAttempts += 1 // 使用次數 +1
+                                dailyAttempts += 1
                                 hasRecordedResult = false
                             } else {
                                 showAlert = true
@@ -121,6 +172,18 @@ struct ContentView: View {
                         }
                         .buttonStyle(GameButtonStyle(backgroundColor: .green))
                     }
+                    .padding(.horizontal)
+                }
+                
+                // 加入鼓勵訊息視圖
+                if showEncouragement {
+                    Text(encouragementMessage)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .foregroundColor(.white)
+                        .cornerRadius(100)
+                        .transition(.scale)
+                        .zIndex(1) // 確保在最上層
                 }
                 
                 Spacer()
@@ -128,77 +191,83 @@ struct ContentView: View {
                 // 下方功能按鈕
                 HStack(spacing: 16) {
                     Button("ProbabilityInfo") {
+                        AudioManager.shared.playSound("Click")
+                        HapticManager.shared.playClick()
                         showProbabilities = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .orange))
                     
                     Button("GameRecords") {
+                        AudioManager.shared.playSound("Click")
+                        HapticManager.shared.playClick()
                         showRecords = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .purple))
                     
                     Button("RatingStandards") {
+                        AudioManager.shared.playSound("Click")
+                        HapticManager.shared.playClick()
                         showLuckLevelStandards = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .gray))
                 }
-                .padding(.bottom, 10)
+                
+                
                 
                 // 新增一個按鈕，可一次增加 3 次可用次數
                 Button("ExtraAttempts") {
+                    AudioManager.shared.playSound("Click")
+                    HapticManager.shared.playClick()
                     maxAttempts += 3
                 }
                 .buttonStyle(GameButtonStyle(backgroundColor: .pink))
-                .padding(.bottom, 30)
+                
+                // 剩餘遊戲次數顯示
+                Text("\(NSLocalizedString("RemainingAttempts", comment: "剩餘遊戲次數前綴")) \(maxAttempts - dailyAttempts)")
+                    .font(.headline)
+                    .padding(.bottom, 10)
+                
             }
         }
-        // 達到上限的提示
-        .alert("AttemptsLimitReached", isPresented: $showAlert) {
-            Button("OK") { }
-        }
-        .onAppear {
-            // 每日重置邏輯
-            let currentDateString = Date().formatted(.dateTime.year().month().day())
-            if lastResetDate != currentDateString {
-                // 重新把已使用次數清零、最大次數恢復初始值
-                dailyAttempts = 0
-                maxAttempts = 5
-                lastResetDate = currentDateString
+            .alert("AttemptsLimitReached", isPresented: $showAlert) {
+                Button("OK") { }
             }
-            AudioManager.shared.playSound("start")
-        }
-        // 顯示機率資訊
-        .sheet(isPresented: $showProbabilities) {
-            ProbabilityView()
-        }
-        // 顯示每日遊玩記錄
-        .sheet(isPresented: $showRecords) {
-            DailyRecordsView(recordManager: recordManager)
-        }
-        // 顯示評分標準
-        .sheet(isPresented: $showLuckLevelStandards) {
-            LuckLevelStandardsView()
-        }
-        // 遊戲結束後記錄該局結果（只記一次）
-        .onChange(of: game.isGameOver) { newValue in
-            if newValue && !hasRecordedResult {
-                let dateString = Date().formatted(.dateTime.year().month().day())
-                let record = GameRecord(
-                    id: UUID(),
-                    date: dateString,
-                    score: game.luckScore,
-                    finalValue: game.currentValue,
-                    levelsPassed: game.levelsPassed,
-                    luckLevel: LuckLevel.level(currentValue: game.currentValue)
-                )
-                recordManager.addOrUpdateRecord(record: record)
-                hasRecordedResult = true
+            .onAppear {
+                let currentDateString = Date().formatted(.dateTime.year().month().day())
+                if lastResetDate != currentDateString {
+                    dailyAttempts = 0
+                    maxAttempts = 5
+                    lastResetDate = currentDateString
+                }
+                AudioManager.shared.playSound("start")
+            }
+            .sheet(isPresented: $showProbabilities) {
+                ProbabilityView()
+            }
+            .sheet(isPresented: $showRecords) {
+                DailyRecordsView(recordManager: recordManager)
+            }
+            .sheet(isPresented: $showLuckLevelStandards) {
+                LuckLevelStandardsView()
+            }
+            .onChange(of: game.isGameOver) { newValue in
+                if newValue && !hasRecordedResult {
+                    let dateString = Date().formatted(.dateTime.year().month().day())
+                    let record = GameRecord(
+                        id: UUID(),
+                        date: dateString,
+                        score: game.luckScore,
+                        finalValue: game.currentValue,
+                        levelsPassed: game.levelsPassed,
+                        luckLevel: LuckLevel.level(currentValue: game.currentValue)
+                    )
+                    recordManager.addOrUpdateRecord(record: record)
+                    hasRecordedResult = true
+                }
             }
         }
     }
-}
 
-// 統一按鈕風格
 struct GameButtonStyle: ButtonStyle {
     var backgroundColor: Color = .blue
     
@@ -215,21 +284,15 @@ struct GameButtonStyle: ButtonStyle {
     }
 }
 
-
-
-
 struct ProbabilityView: View {
     @Environment(\.dismiss) var dismiss
 
-    // 固定的演算子機率
     let operatorProbabilities: [(name: String, probability: Double)] = [
         ("Addition", 60),
         ("Subtraction", 10),
         ("Multiplication", 30)
     ]
     
-    // 假設此函式已存在於 Option 結構內
-    // static func numberProbabilities() -> [(number: Int, probability: Double)]
     let numberProbabilities = Option.numberProbabilities()
     
     var body: some View {
@@ -249,8 +312,6 @@ struct ProbabilityView: View {
                         HStack {
                             Text("\(NSLocalizedString("NumberPrefix", comment: "數字前綴")) \(item.number)")
                             Spacer()
-                            
-                            // 依照不同區間格式化
                             let formattedProbability: String = {
                                 if item.probability < 0.01 {
                                     return String(format: "%.5f", item.probability)
@@ -258,7 +319,6 @@ struct ProbabilityView: View {
                                     return String(format: "%.2f", item.probability)
                                 }
                             }()
-                            
                             Text("\(formattedProbability)%")
                         }
                     }
