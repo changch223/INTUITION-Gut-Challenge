@@ -1,10 +1,3 @@
-//
-//  LuckLevelStandardsView.swift
-//  BoomOrBonus
-//
-//  Created by chang chiawei on 2025-03-30.
-//
-
 import SwiftUI
 
 struct LuckLevelRange: Identifiable {
@@ -14,26 +7,23 @@ struct LuckLevelRange: Identifiable {
 }
 
 struct LuckLevelStandardsView: View {
-    // 固定區間設定（僅用於顯示參考，不影響實際計算）
+    // 依據最終分數定義評分標準，直觀顯示門檻
     let levels: [LuckLevelRange] = [
-        // 負分區間
-        LuckLevelRange(label: "運氣爆炸差", rangeDescription: "composite < -1.0"),
-        LuckLevelRange(label: "運氣極差", rangeDescription: "[-1.0, -0.5)"),
-        LuckLevelRange(label: "倒楣透頂", rangeDescription: "[-0.5, 0)"),
-
-        // 正分區間
-        LuckLevelRange(label: "運氣不佳", rangeDescription: "[0, 1)"),
-        LuckLevelRange(label: "運氣稍差", rangeDescription: "[1, 2)"),
-        LuckLevelRange(label: "普通水準", rangeDescription: "[2, 3)"),
-        LuckLevelRange(label: "運氣尚可", rangeDescription: "[3, 4)"),
-        LuckLevelRange(label: "小吉", rangeDescription: "[4, 5)"),
-        LuckLevelRange(label: "中吉", rangeDescription: "[5, 6)"),
-        LuckLevelRange(label: "大吉", rangeDescription: "[6, 7)"),
-        LuckLevelRange(label: "運氣極好", rangeDescription: "[7, 8)"),
-        LuckLevelRange(label: "超級好運", rangeDescription: "[8, 9)"),
-        LuckLevelRange(label: "歐皇現世", rangeDescription: "[9, 10)"),
-        LuckLevelRange(label: "運氣之神降臨", rangeDescription: "[10, 11)"),
-        LuckLevelRange(label: "運氣之神降臨ProMax", rangeDescription: "composite ≥ 11")
+        LuckLevelRange(label: "運氣爆炸差", rangeDescription: "final score < -50"),
+        LuckLevelRange(label: "運氣極差", rangeDescription: "-50 ~ -10"),
+        LuckLevelRange(label: "倒楣透頂", rangeDescription: "-10 ~ 0"),
+        LuckLevelRange(label: "運氣不佳", rangeDescription: "0 ~ 3"),
+        LuckLevelRange(label: "運氣稍差", rangeDescription: "3 ~ 5"),
+        LuckLevelRange(label: "普通水準", rangeDescription: "5 ~ 10"),
+        LuckLevelRange(label: "運氣尚可", rangeDescription: "10 ~ 15"),
+        LuckLevelRange(label: "小吉", rangeDescription: "15 ~ 30"),
+        LuckLevelRange(label: "中吉", rangeDescription: "30 ~ 50"),
+        LuckLevelRange(label: "大吉", rangeDescription: "50 ~ 100"),
+        LuckLevelRange(label: "運氣極好", rangeDescription: "100 ~ 500"),
+        LuckLevelRange(label: "超級好運", rangeDescription: "500 ~ 1000"),
+        LuckLevelRange(label: "歐皇現世", rangeDescription: "1000 ~ 5000"),
+        LuckLevelRange(label: "運氣之神降臨", rangeDescription: "5000 ~ 10000"),
+        LuckLevelRange(label: "運氣之神降臨ProMax", rangeDescription: "final score ≥ 10000")
     ]
     
     var body: some View {

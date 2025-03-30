@@ -5,16 +5,22 @@
 //  Created by chang chiawei on 2025-03-30.
 //
 
-import SwiftUI
-import SwiftData
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
     @StateObject private var game = GameLogic()
     @StateObject private var recordManager = GameRecordManager()
     
+    // 原本的已使用次數
     @AppStorage("dailyAttempts") var dailyAttempts = 0
+    
+    // 用於記錄上次重置日期
+    @AppStorage("lastResetDate") var lastResetDate: String = ""
+    
+    // **把 maxAttempts 也改用 @AppStorage **
+    @AppStorage("maxAttempts") var maxAttempts = 5
     
     @State private var showAlert = false
     @State private var showProbabilities = false
@@ -24,113 +30,150 @@ struct ContentView: View {
     @State private var hasRecordedResult = false
 
     var body: some View {
-        VStack(spacing: 30) {
-            Text("運氣測試遊戲")
-                .font(.largeTitle).bold()
-                .padding(.top, 40)
+        ZStack {
+            // 背景漸層
+            LinearGradient(
+                gradient: Gradient(colors: [Color.white, Color.blue.opacity(0.2)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                Spacer() // 讓內容更偏向畫面中間
+                
+                // 遊戲標題
+                Text("運氣測試遊戲")
+                    .font(.largeTitle)
+                    .bold()
+                
+                // 剩餘遊戲次數顯示
+                Text("剩餘遊戲次數：\(maxAttempts - dailyAttempts)")
+                    .font(.headline)
+                    .padding(.bottom, 10)
 
-            // 顯示當前數值
-            Text("當前數值：\(game.currentValue)")
-                .font(.title)
+                // 當前數值
+                Text("當前數值：\(game.currentValue)")
+                    .font(.title)
+                    .padding(.horizontal)
 
-            // 顯示闖了幾關
-            Text("你已闖了 \(game.levelsPassed) 關")
-                .font(.title3)
-                .foregroundColor(.gray)
+                // 闖關數
+                Text("你已闖了 \(game.levelsPassed) 關")
+                    .font(.title3)
+                    .foregroundColor(.gray)
+                    .padding(.bottom, 10)
 
-            if !game.isGameOver {
-                // 安全選項 / 炸彈選項按鈕
-                HStack(spacing: 40) {
-                    ForEach(game.options.indices, id: \.self) { index in
-                        Button(action: {
-                            withAnimation(.spring) {
-                                game.selectOption(game.options[index])
-                                AudioManager.shared.playSound(game.options[index].isBomb ? "bomb" : "success")
-                            }
-                        }) {
-                            VStack {
-                                Text("\(game.options[index].operation.rawValue) \(game.options[index].number)")
-                                    .font(.title)
-                                    .frame(width: 120, height: 120)
-                                    .background(Color.blue)
+                if !game.isGameOver {
+                    // 選項按鈕
+                    HStack(spacing: 40) {
+                        ForEach(game.options.indices, id: \.self) { index in
+                            Button(action: {
+                                withAnimation(.spring) {
+                                    game.selectOption(game.options[index])
+                                    AudioManager.shared.playSound(
+                                        game.options[index].isBomb ? "bomb" : "success"
+                                    )
+                                }
+                            }) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .fill(Color.blue)
+                                        .frame(width: 120, height: 120)
+                                        .shadow(radius: 5)
+                                    
+                                    HStack(spacing: 8) {
+                                        Text(game.options[index].operation.rawValue)
+                                        Text("\(game.options[index].number)")
+                                    }
+                                    .font(.title2)
                                     .foregroundColor(.white)
-                                    .cornerRadius(15)
-                                    .shadow(radius: 5)
+                                }
                             }
                         }
                     }
-                }
-            } else {
-                // 遊戲結束畫面
-                VStack {
-                    Text("遊戲結束！")
-                        .font(.title).bold()
-                    
-                    Text("最終數值：\(game.currentValue)")
-                    Text("安全選項數：\(game.luckScore)")
-                    Text("闖關數：\(game.levelsPassed)")
-                    Text("運氣評分：\(LuckLevel.level(safeScore: game.luckScore, currentValue: game.currentValue))")
-                        .padding()
-                    
-                    Button("重新開始") {
-                        if dailyAttempts < 2 {
-                            game.resetGame()
-                            dailyAttempts += 1
-                            hasRecordedResult = false
-                        } else {
-                            showAlert = true
+                    .padding(.top, 10)
+                
+                } else {
+                    // 遊戲結束畫面
+                    VStack(spacing: 15) {
+                        Text("遊戲結束！")
+                            .font(.title).bold()
+                        
+                        Text("最終數值：\(game.currentValue)")
+                        Text("闖關數：\(game.levelsPassed)")
+                        
+                        // 注意這裡已移除 safeScore，只用 currentValue
+                        Text("運氣評分：\(LuckLevel.level(currentValue: game.currentValue))")
+                            .padding()
+                            .font(.headline)
+                        
+                        Button("重新開始") {
+                            // 改為比較 dailyAttempts 與 maxAttempts
+                            if dailyAttempts < maxAttempts {
+                                game.resetGame()
+                                dailyAttempts += 1 // 使用次數 +1
+                                hasRecordedResult = false
+                            } else {
+                                showAlert = true
+                            }
                         }
+                        .buttonStyle(GameButtonStyle(backgroundColor: .green))
                     }
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
                 }
-            }
-            
-            // 下方功能按鈕
-            HStack(spacing: 20) {
-                Button("顯示機率資訊") {
-                    showProbabilities = true
-                }
-                .padding()
-                .background(Color.orange)
-                .foregroundColor(.white)
-                .cornerRadius(10)
                 
-                Button("每日遊玩記錄") {
-                    showRecords = true
-                }
-                .padding()
-                .background(Color.purple)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+                Spacer()
                 
-                // 顯示評分標準
-                Button("評分標準") {
-                    showLuckLevelStandards = true
+                // 下方功能按鈕
+                HStack(spacing: 16) {
+                    Button("顯示機率資訊") {
+                        showProbabilities = true
+                    }
+                    .buttonStyle(GameButtonStyle(backgroundColor: .orange))
+                    
+                    Button("每日遊玩記錄") {
+                        showRecords = true
+                    }
+                    .buttonStyle(GameButtonStyle(backgroundColor: .purple))
+                    
+                    Button("評分標準") {
+                        showLuckLevelStandards = true
+                    }
+                    .buttonStyle(GameButtonStyle(backgroundColor: .gray))
                 }
-                .padding()
-                .background(Color.gray)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+                .padding(.bottom, 10)
+                
+                // 新增一個按鈕，可一次增加 3 次可用次數
+                Button("獲得額外3次機會") {
+                    maxAttempts += 3
+                }
+                .buttonStyle(GameButtonStyle(backgroundColor: .pink))
+                .padding(.bottom, 30)
             }
-            
-            Spacer()
         }
+        // 達到上限的提示
         .alert("今天遊玩次數已達上限！", isPresented: $showAlert) {
             Button("好") { }
         }
-        .padding(.bottom, 30)
         .onAppear {
+            // 每日重置邏輯
+            let currentDateString = Date().formatted(.dateTime.year().month().day())
+            if lastResetDate != currentDateString {
+                // 重新把已使用次數清零、最大次數恢復初始值
+                dailyAttempts = 0
+                maxAttempts = 5
+                lastResetDate = currentDateString
+            }
             AudioManager.shared.playSound("start")
         }
+        // 顯示機率資訊
         .sheet(isPresented: $showProbabilities) {
             ProbabilityView()
         }
+        // 顯示每日遊玩記錄
         .sheet(isPresented: $showRecords) {
             DailyRecordsView(recordManager: recordManager)
         }
+        // 顯示評分標準
         .sheet(isPresented: $showLuckLevelStandards) {
             LuckLevelStandardsView()
         }
@@ -144,7 +187,7 @@ struct ContentView: View {
                     score: game.luckScore,
                     finalValue: game.currentValue,
                     levelsPassed: game.levelsPassed,
-                    luckLevel: LuckLevel.level(safeScore: game.luckScore, currentValue: game.currentValue)
+                    luckLevel: LuckLevel.level(currentValue: game.currentValue)
                 )
                 recordManager.addOrUpdateRecord(record: record)
                 hasRecordedResult = true
@@ -152,6 +195,24 @@ struct ContentView: View {
         }
     }
 }
+
+// 統一按鈕風格
+struct GameButtonStyle: ButtonStyle {
+    var backgroundColor: Color = .blue
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(backgroundColor)
+            .cornerRadius(10)
+            .shadow(color: .gray.opacity(0.4), radius: 5, x: 0, y: 2)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+    }
+}
+
 
 
 
@@ -161,8 +222,8 @@ struct ProbabilityView: View {
     // 固定的演算子機率
     let operatorProbabilities: [(name: String, probability: Double)] = [
         ("加法 (+)", 60),
-        ("減法 (-)", 20),
-        ("乘法 (×)", 20)
+        ("減法 (-)", 10),
+        ("乘法 (×)", 30)
     ]
     
     // 假設此函式已存在於 Option 結構內
