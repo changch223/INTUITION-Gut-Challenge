@@ -10,25 +10,27 @@ import SwiftUI
 struct DailyRecordsView: View {
     @ObservedObject var recordManager: GameRecordManager
     @Environment(\.dismiss) var dismiss
-
+    
     var body: some View {
         NavigationView {
             List {
                 ForEach(recordManager.records) { record in
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("日期：\(record.date)")
+                        Text("\(NSLocalizedString("Date", comment: "日期前綴")) \(record.date)")
                             .font(.headline)
-                        Text("最終數值：\(record.finalValue)")
-                        Text("安全選項數：\(record.score)  闖關：\(record.levelsPassed)")
-                        Text("運氣評分：\(record.luckLevel)")
+                        Text("\(NSLocalizedString("FinalValueRecord", comment: "最終數值前綴")) \(record.finalValue)")
+                        Text("\(NSLocalizedString("SafeOptionsLevels", comment: "安全選項數前綴")) \(record.score)  \(NSLocalizedString("LevelsPassedRecord", comment: "闖關數前綴")) \(record.levelsPassed)")
+                        Text("\(NSLocalizedString("LuckRating", comment: "運氣評分前綴")) \(record.luckLevel)")
                     }
                     .padding(5)
                 }
             }
-            .navigationTitle("每日最高紀錄")
+            .navigationTitle(NSLocalizedString("DailyRecordsTitle", comment: "每日最高紀錄標題"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("關閉") { dismiss() }
+                    Button(NSLocalizedString("Close", comment: "關閉按鈕")) {
+                        dismiss()
+                    }
                 }
             }
         }

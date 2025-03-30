@@ -1,0 +1,77 @@
+//
+//  Untitled.swift
+//  BoomOrBonus
+//
+//  Created by chang chiawei on 2025-03-30.
+//
+
+/* App Titles & Main View */
+"GameTitle" = "Luck Test Game";
+"RemainingAttempts" = "Remaining Attempts:";
+"CurrentValue" = "Current Value:";
+"LevelsPassedPrefix" = "You have passed";
+"LevelsPassedSuffix" = "levels";
+"GameOver" = "Game Over!";
+"FinalValue" = "Final Value:";
+"LevelsPassed" = "Levels Passed:";
+"LuckScore" = "Luck Score:";
+"Restart" = "Restart";
+
+/* Buttons & Alerts */
+"ProbabilityInfo" = "Probability Information";
+"GameRecords" = "Game Records";
+"RatingStandards" = "Rating Standards";
+"ExtraAttempts" = "Get 3 Extra Chances";
+"AttemptsLimitReached" = "Today's attempts have reached the limit!";
+"OK" = "OK";
+"Close" = "Close";
+
+/* Probability View */
+"OperatorProbabilitySection" = "Operator Probabilities";
+"Addition" = "Addition (+)";
+"Subtraction" = "Subtraction (-)";
+"Multiplication" = "Multiplication (×)";
+"NumberProbabilitySection" = "Number Probabilities (1 - 50)";
+"NumberPrefix" = "Number ";
+
+/* Daily Records View */
+"DailyRecordsTitle" = "Daily High Scores";
+"Date" = "Date:";
+"FinalValueRecord" = "Final Value:";
+"SafeOptionsLevels" = "Safe Options:";
+"LevelsPassedRecord" = "Levels:";
+"LuckRating" = "Luck Rating:";
+
+/* Luck Level */
+"LuckLevel_VeryBad" = "Disastrously Unlucky";
+"LuckLevel_ExtremelyBad" = "Extremely Unlucky";
+"LuckLevel_Terrible" = "Terribly Unlucky";
+"LuckLevel_Bad" = "Unlucky";
+"LuckLevel_SlightlyBad" = "Slightly Unlucky";
+"LuckLevel_Average" = "Average";
+"LuckLevel_Fair" = "Decent Luck";
+"LuckLevel_SmallBlessing" = "Minor Blessing";
+"LuckLevel_MediumBlessing" = "Moderate Blessing";
+"LuckLevel_BigBlessing" = "Major Blessing";
+"LuckLevel_VeryGood" = "Very Lucky";
+"LuckLevel_SuperGood" = "Super Lucky";
+"LuckLevel_Legendary" = "Legendary Luck";
+"LuckLevel_God" = "Godlike Luck";
+"LuckLevel_GodProMax" = "Ultimate Godlike Luck";
+
+/* Luck Level Range Descriptions */
+"Range_VeryBad" = "final score < -50";
+"Range_ExtremelyBad" = "-50 ~ -10";
+"Range_Terrible" = "-10 ~ 0";
+"Range_Bad" = "0 ~ 3";
+"Range_SlightlyBad" = "3 ~ 5";
+"Range_Average" = "5 ~ 10";
+"Range_Fair" = "10 ~ 15";
+"Range_SmallBlessing" = "15 ~ 30";
+"Range_MediumBlessing" = "30 ~ 50";
+"Range_BigBlessing" = "50 ~ 100";
+"Range_VeryGood" = "100 ~ 500";
+"Range_SuperGood" = "500 ~ 1000";
+"Range_Legendary" = "1000 ~ 5000";
+"Range_God" = "5000 ~ 10000";
+"Range_GodProMax" = "final score ≥ 10000";

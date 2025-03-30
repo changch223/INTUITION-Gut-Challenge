@@ -1,0 +1,77 @@
+//
+//  Untitled.swift
+//  BoomOrBonus
+//
+//  Created by chang chiawei on 2025-03-30.
+//
+
+/* アプリタイトル＆メインビュー */
+"GameTitle" = "運試しゲーム";
+"RemainingAttempts" = "残りプレイ回数：";
+"CurrentValue" = "現在の値：";
+"LevelsPassedPrefix" = "あなたは";
+"LevelsPassedSuffix" = "ステージをクリア";
+"GameOver" = "ゲームオーバー！";
+"FinalValue" = "最終値：";
+"LevelsPassed" = "突破ステージ数：";
+"LuckScore" = "運の評価：";
+"Restart" = "再スタート";
+
+/* ボタン＆アラート */
+"ProbabilityInfo" = "確率情報";
+"GameRecords" = "プレイ記録";
+"RatingStandards" = "評価基準";
+"ExtraAttempts" = "追加で3回のチャンスを獲得";
+"AttemptsLimitReached" = "本日のプレイ回数は上限に達しました！";
+"OK" = "OK";
+"Close" = "閉じる";
+
+/* 確率情報ビュー */
+"OperatorProbabilitySection" = "演算子の確率";
+"Addition" = "加算 (+)";
+"Subtraction" = "減算 (-)";
+"Multiplication" = "乗算 (×)";
+"NumberProbabilitySection" = "数字の確率 (1 - 50)";
+"NumberPrefix" = "数字 ";
+
+/* プレイ記録ビュー */
+"DailyRecordsTitle" = "本日の最高記録";
+"Date" = "日付：";
+"FinalValueRecord" = "最終値：";
+"SafeOptionsLevels" = "セーフオプション数：";
+"LevelsPassedRecord" = "突破ステージ：";
+"LuckRating" = "運の評価：";
+
+/* 運評価（Luck Level） */
+"LuckLevel_VeryBad" = "超不運";
+"LuckLevel_ExtremelyBad" = "非常に不運";
+"LuckLevel_Terrible" = "極めて不運";
+"LuckLevel_Bad" = "不運";
+"LuckLevel_SlightlyBad" = "やや不運";
+"LuckLevel_Average" = "普通";
+"LuckLevel_Fair" = "まあまあの運";
+"LuckLevel_SmallBlessing" = "小吉";
+"LuckLevel_MediumBlessing" = "中吉";
+"LuckLevel_BigBlessing" = "大吉";
+"LuckLevel_VeryGood" = "非常に運が良い";
+"LuckLevel_SuperGood" = "スーパーラッキー";
+"LuckLevel_Legendary" = "伝説の幸運";
+"LuckLevel_God" = "神のごとき運";
+"LuckLevel_GodProMax" = "神のごとき究極の運";
+
+/* 運評価レンジの説明 */
+"Range_VeryBad" = "最終スコア < -50";
+"Range_ExtremelyBad" = "-50 ～ -10";
+"Range_Terrible" = "-10 ～ 0";
+"Range_Bad" = "0 ～ 3";
+"Range_SlightlyBad" = "3 ～ 5";
+"Range_Average" = "5 ～ 10";
+"Range_Fair" = "10 ～ 15";
+"Range_SmallBlessing" = "15 ～ 30";
+"Range_MediumBlessing" = "30 ～ 50";
+"Range_BigBlessing" = "50 ～ 100";
+"Range_VeryGood" = "100 ～ 500";
+"Range_SuperGood" = "500 ～ 1000";
+"Range_Legendary" = "1000 ～ 5000";
+"Range_God" = "5000 ～ 10000";
+"Range_GodProMax" = "最終スコア ≥ 10000";

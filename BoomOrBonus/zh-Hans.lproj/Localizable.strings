@@ -1,0 +1,77 @@
+//
+//  Untitled.swift
+//  BoomOrBonus
+//
+//  Created by chang chiawei on 2025-03-30.
+//
+
+/* App Titles & Main View */
+"GameTitle" = "运气测试游戏";
+"RemainingAttempts" = "剩余游戏次数：";
+"CurrentValue" = "当前数值：";
+"LevelsPassedPrefix" = "你已闯了";
+"LevelsPassedSuffix" = "关";
+"GameOver" = "游戏结束！";
+"FinalValue" = "最终数值：";
+"LevelsPassed" = "闯关数：";
+"LuckScore" = "运气评分：";
+"Restart" = "重新开始";
+
+/* 按钮及提示 */
+"ProbabilityInfo" = "概率信息";
+"GameRecords" = "游戏记录";
+"RatingStandards" = "评分标准";
+"ExtraAttempts" = "获得额外3次机会";
+"AttemptsLimitReached" = "今天游戏次数已达上限！";
+"OK" = "好";
+"Close" = "关闭";
+
+/* Probability View */
+"OperatorProbabilitySection" = "运算符概率";
+"Addition" = "加法 (+)";
+"Subtraction" = "减法 (-)";
+"Multiplication" = "乘法 (×)";
+"NumberProbabilitySection" = "数字概率 (1 - 50)";
+"NumberPrefix" = "数字 ";
+
+/* Daily Records View */
+"DailyRecordsTitle" = "每日最高记录";
+"Date" = "日期：";
+"FinalValueRecord" = "最终数值：";
+"SafeOptionsLevels" = "安全选项数：";
+"LevelsPassedRecord" = "闯关：";
+"LuckRating" = "运气评分：";
+
+/* Luck Level */
+"LuckLevel_VeryBad" = "运气爆炸差";
+"LuckLevel_ExtremelyBad" = "运气极差";
+"LuckLevel_Terrible" = "倒霉透顶";
+"LuckLevel_Bad" = "运气不佳";
+"LuckLevel_SlightlyBad" = "运气稍差";
+"LuckLevel_Average" = "普通水准";
+"LuckLevel_Fair" = "运气尚可";
+"LuckLevel_SmallBlessing" = "小吉";
+"LuckLevel_MediumBlessing" = "中吉";
+"LuckLevel_BigBlessing" = "大吉";
+"LuckLevel_VeryGood" = "运气极好";
+"LuckLevel_SuperGood" = "超级好运";
+"LuckLevel_Legendary" = "欧皇现世";
+"LuckLevel_God" = "运气之神降临";
+"LuckLevel_GodProMax" = "运气之神降临ProMax";
+
+/* Luck Level Range 描述 */
+"Range_VeryBad" = "最终分数 < -50";
+"Range_ExtremelyBad" = "-50 ~ -10";
+"Range_Terrible" = "-10 ~ 0";
+"Range_Bad" = "0 ~ 3";
+"Range_SlightlyBad" = "3 ~ 5";
+"Range_Average" = "5 ~ 10";
+"Range_Fair" = "10 ~ 15";
+"Range_SmallBlessing" = "15 ~ 30";
+"Range_MediumBlessing" = "30 ~ 50";
+"Range_BigBlessing" = "50 ~ 100";
+"Range_VeryGood" = "100 ~ 500";
+"Range_SuperGood" = "500 ~ 1000";
+"Range_Legendary" = "1000 ~ 5000";
+"Range_God" = "5000 ~ 10000";
+"Range_GodProMax" = "最终分数 ≥ 10000";

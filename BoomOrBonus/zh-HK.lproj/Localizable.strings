@@ -1,0 +1,77 @@
+//
+//  Untitled.swift
+//  BoomOrBonus
+//
+//  Created by chang chiawei on 2025-03-30.
+//
+
+/* App Titles & Main View */
+"GameTitle" = "運氣測試遊戲";
+"RemainingAttempts" = "剩餘遊戲次數：";
+"CurrentValue" = "當前數值：";
+"LevelsPassedPrefix" = "你已闖了";
+"LevelsPassedSuffix" = "關";
+"GameOver" = "遊戲結束！";
+"FinalValue" = "最終數值：";
+"LevelsPassed" = "闖關數：";
+"LuckScore" = "運氣評分：";
+"Restart" = "重新開始";
+
+/* 按鈕及提示 */
+"ProbabilityInfo" = "機率資訊";
+"GameRecords" = "遊玩記錄";
+"RatingStandards" = "評分標準";
+"ExtraAttempts" = "獲得額外3次機會";
+"AttemptsLimitReached" = "今天遊玩次數已達上限！";
+"OK" = "好";
+"Close" = "關閉";
+
+/* Probability View */
+"OperatorProbabilitySection" = "演算子機率";
+"Addition" = "加法 (+)";
+"Subtraction" = "減法 (-)";
+"Multiplication" = "乘法 (×)";
+"NumberProbabilitySection" = "數字機率 (1 - 50)";
+"NumberPrefix" = "數字 ";
+
+/* Daily Records View */
+"DailyRecordsTitle" = "每日最高紀錄";
+"Date" = "日期：";
+"FinalValueRecord" = "最終數值：";
+"SafeOptionsLevels" = "安全選項數：";
+"LevelsPassedRecord" = "闖關：";
+"LuckRating" = "運氣評分：";
+
+/* Luck Level（使用於評分與標準） */
+"LuckLevel_VeryBad" = "運氣爆炸差";
+"LuckLevel_ExtremelyBad" = "運氣極差";
+"LuckLevel_Terrible" = "倒楣透頂";
+"LuckLevel_Bad" = "運氣不佳";
+"LuckLevel_SlightlyBad" = "運氣稍差";
+"LuckLevel_Average" = "普通水準";
+"LuckLevel_Fair" = "運氣尚可";
+"LuckLevel_SmallBlessing" = "小吉";
+"LuckLevel_MediumBlessing" = "中吉";
+"LuckLevel_BigBlessing" = "大吉";
+"LuckLevel_VeryGood" = "運氣極好";
+"LuckLevel_SuperGood" = "超級好運";
+"LuckLevel_Legendary" = "歐皇現世";
+"LuckLevel_God" = "運氣之神降臨";
+"LuckLevel_GodProMax" = "運氣之神降臨ProMax";
+
+/* Luck Level Range 描述 */
+"Range_VeryBad" = "final score < -50";
+"Range_ExtremelyBad" = "-50 ~ -10";
+"Range_Terrible" = "-10 ~ 0";
+"Range_Bad" = "0 ~ 3";
+"Range_SlightlyBad" = "3 ~ 5";
+"Range_Average" = "5 ~ 10";
+"Range_Fair" = "10 ~ 15";
+"Range_SmallBlessing" = "15 ~ 30";
+"Range_MediumBlessing" = "30 ~ 50";
+"Range_BigBlessing" = "50 ~ 100";
+"Range_VeryGood" = "100 ~ 500";
+"Range_SuperGood" = "500 ~ 1000";
+"Range_Legendary" = "1000 ~ 5000";
+"Range_God" = "5000 ~ 10000";
+"Range_GodProMax" = "final score ≥ 10000";

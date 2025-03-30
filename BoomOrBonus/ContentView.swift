@@ -43,22 +43,22 @@ struct ContentView: View {
                 Spacer() // 讓內容更偏向畫面中間
                 
                 // 遊戲標題
-                Text("運氣測試遊戲")
+                Text("GameTitle")
                     .font(.largeTitle)
                     .bold()
                 
                 // 剩餘遊戲次數顯示
-                Text("剩餘遊戲次數：\(maxAttempts - dailyAttempts)")
+                Text("\(NSLocalizedString("RemainingAttempts", comment: "剩餘遊戲次數前綴")) \(maxAttempts - dailyAttempts)")
                     .font(.headline)
                     .padding(.bottom, 10)
 
                 // 當前數值
-                Text("當前數值：\(game.currentValue)")
+                Text("\(NSLocalizedString("CurrentValue", comment: "當前數值前綴")) \(game.currentValue)")
                     .font(.title)
                     .padding(.horizontal)
 
                 // 闖關數
-                Text("你已闖了 \(game.levelsPassed) 關")
+                Text("\(NSLocalizedString("LevelsPassedPrefix", comment: "前綴文字：例如『你已闖了』")) \(game.levelsPassed) \(NSLocalizedString("LevelsPassedSuffix", comment: "後綴文字：例如『關』"))")
                     .font(.title3)
                     .foregroundColor(.gray)
                     .padding(.bottom, 10)
@@ -96,18 +96,20 @@ struct ContentView: View {
                 } else {
                     // 遊戲結束畫面
                     VStack(spacing: 15) {
-                        Text("遊戲結束！")
-                            .font(.title).bold()
+                        Text(NSLocalizedString("GameOver", comment: "遊戲結束標題"))
+                                .font(.title)
+                                .bold()
                         
-                        Text("最終數值：\(game.currentValue)")
-                        Text("闖關數：\(game.levelsPassed)")
+                        Text("\(NSLocalizedString("FinalValue", comment: "最終數值前綴")) \(game.currentValue)")
+                        Text("\(NSLocalizedString("LevelsPassed", comment: "闖關數前綴")) \(game.levelsPassed)")
+                            
                         
                         // 注意這裡已移除 safeScore，只用 currentValue
-                        Text("運氣評分：\(LuckLevel.level(currentValue: game.currentValue))")
-                            .padding()
-                            .font(.headline)
+                        Text("\(NSLocalizedString("LuckScore", comment: "運氣評分前綴")) \(LuckLevel.level(currentValue: game.currentValue))")
+                                .padding()
+                                .font(.headline)
                         
-                        Button("重新開始") {
+                        Button(NSLocalizedString("Restart", comment: "重新開始按鈕標題")) {
                             // 改為比較 dailyAttempts 與 maxAttempts
                             if dailyAttempts < maxAttempts {
                                 game.resetGame()
@@ -125,17 +127,17 @@ struct ContentView: View {
                 
                 // 下方功能按鈕
                 HStack(spacing: 16) {
-                    Button("顯示機率資訊") {
+                    Button("ProbabilityInfo") {
                         showProbabilities = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .orange))
                     
-                    Button("每日遊玩記錄") {
+                    Button("GameRecords") {
                         showRecords = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .purple))
                     
-                    Button("評分標準") {
+                    Button("RatingStandards") {
                         showLuckLevelStandards = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .gray))
@@ -143,7 +145,7 @@ struct ContentView: View {
                 .padding(.bottom, 10)
                 
                 // 新增一個按鈕，可一次增加 3 次可用次數
-                Button("獲得額外3次機會") {
+                Button("ExtraAttempts") {
                     maxAttempts += 3
                 }
                 .buttonStyle(GameButtonStyle(backgroundColor: .pink))
@@ -151,8 +153,8 @@ struct ContentView: View {
             }
         }
         // 達到上限的提示
-        .alert("今天遊玩次數已達上限！", isPresented: $showAlert) {
-            Button("好") { }
+        .alert("AttemptsLimitReached", isPresented: $showAlert) {
+            Button("OK") { }
         }
         .onAppear {
             // 每日重置邏輯
@@ -221,9 +223,9 @@ struct ProbabilityView: View {
 
     // 固定的演算子機率
     let operatorProbabilities: [(name: String, probability: Double)] = [
-        ("加法 (+)", 60),
-        ("減法 (-)", 10),
-        ("乘法 (×)", 30)
+        ("Addition", 60),
+        ("Subtraction", 10),
+        ("Multiplication", 30)
     ]
     
     // 假設此函式已存在於 Option 結構內
@@ -233,43 +235,39 @@ struct ProbabilityView: View {
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("演算子機率")) {
+                Section(header: Text(NSLocalizedString("OperatorProbabilitySection", comment: "演算子機率區段"))) {
                     ForEach(operatorProbabilities, id: \.name) { op in
                         HStack {
-                            Text(op.name)
+                            Text(NSLocalizedString(op.name, comment: "運算子名稱"))
                             Spacer()
                             Text("\(String(format: "%.2f", op.probability))%")
                         }
                     }
                 }
-                Section(header: Text("數字機率 (1 - 50)")) {
+                Section(header: Text(NSLocalizedString("NumberProbabilitySection", comment: "數字機率區段"))) {
                     ForEach(numberProbabilities, id: \.number) { item in
                         HStack {
-                            Text("數字 \(item.number)")
+                            Text("\(NSLocalizedString("NumberPrefix", comment: "數字前綴")) \(item.number)")
                             Spacer()
                             
                             // 依照不同區間格式化
                             let formattedProbability: String = {
                                 if item.probability < 0.01 {
-                                    // 小於 0.01 時，顯示 8 位小數
-                                    // e.g. 0.00001234
                                     return String(format: "%.5f", item.probability)
                                 } else {
                                     return String(format: "%.2f", item.probability)
                                 }
                             }()
                             
-                            
                             Text("\(formattedProbability)%")
-                            
                         }
                     }
                 }
             }
-            .navigationTitle("機率資訊")
+            .navigationTitle(NSLocalizedString("ProbabilityInfo", comment: "機率資訊"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("關閉") {
+                    Button(NSLocalizedString("Close", comment: "關閉按鈕")) {
                         dismiss()
                     }
                 }
