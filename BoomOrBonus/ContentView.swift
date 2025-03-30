@@ -9,58 +9,70 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @StateObject private var game = GameLogic()
+    @AppStorage("dailyAttempts") var dailyAttempts = 0
+    @State private var showAlert = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        VStack(spacing: 40) {
+            Text("運氣測試遊戲")
+                .font(.largeTitle).bold()
+                .padding()
+
+            Text("當前數值：\(game.currentValue)")
+                .font(.title)
+
+            if !game.isGameOver {
+                HStack(spacing: 40) {
+                    ForEach(game.options.indices, id: \.self) { index in
+                        Button(action: {
+                            withAnimation(.spring) {
+                                game.selectOption(game.options[index])
+                                AudioManager.shared.playSound(game.options[index].isBomb ? "bomb" : "success")
+                            }
+                        }) {
+                            VStack {
+                                Text("\(game.options[index].operation.rawValue) \(game.options[index].number)")
+                                    .font(.title)
+                                    .frame(width: 120, height: 120)
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(15)
+                                    .shadow(radius: 5)
+                            }
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
-            }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+            } else {
+                VStack {
+                    Text("遊戲結束！")
+                        .font(.title).bold()
+
+                    Text("最終數值：\(game.currentValue)")
+                    Text("運氣評分：\(LuckLevel.level(for: game.luckScore)) (\(game.luckScore))")
+                        .padding()
+
+                    Button("重新開始") {
+                        if dailyAttempts < 10 {
+                            game.resetGame()
+                            dailyAttempts += 1
+                        } else {
+                            showAlert = true
+                        }
                     }
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
             }
-        } detail: {
-            Text("Select an item")
+        }
+        .alert("今天遊玩次數已達上限！", isPresented: $showAlert) {
+            Button("好") { }
+        }
+        .padding()
+        .onAppear {
+            AudioManager.shared.playSound("start")
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
-    }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
