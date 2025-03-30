@@ -8,25 +8,38 @@
 import SwiftUI
 import SwiftData
 
+import SwiftUI
+
 struct ContentView: View {
     @StateObject private var game = GameLogic()
     @StateObject private var recordManager = GameRecordManager()
+    
     @AppStorage("dailyAttempts") var dailyAttempts = 0
+    
     @State private var showAlert = false
     @State private var showProbabilities = false
     @State private var showRecords = false
+    @State private var showLuckLevelStandards = false
+    
     @State private var hasRecordedResult = false
 
     var body: some View {
-        VStack(spacing: 40) {
+        VStack(spacing: 30) {
             Text("運氣測試遊戲")
                 .font(.largeTitle).bold()
-                .padding()
+                .padding(.top, 40)
 
+            // 顯示當前數值
             Text("當前數值：\(game.currentValue)")
                 .font(.title)
-            
+
+            // 顯示闖了幾關
+            Text("你已闖了 \(game.levelsPassed) 關")
+                .font(.title3)
+                .foregroundColor(.gray)
+
             if !game.isGameOver {
+                // 安全選項 / 炸彈選項按鈕
                 HStack(spacing: 40) {
                     ForEach(game.options.indices, id: \.self) { index in
                         Button(action: {
@@ -48,6 +61,7 @@ struct ContentView: View {
                     }
                 }
             } else {
+                // 遊戲結束畫面
                 VStack {
                     Text("遊戲結束！")
                         .font(.title).bold()
@@ -59,7 +73,7 @@ struct ContentView: View {
                         .padding()
                     
                     Button("重新開始") {
-                        if dailyAttempts < 5 {
+                        if dailyAttempts < 2 {
                             game.resetGame()
                             dailyAttempts += 1
                             hasRecordedResult = false
@@ -74,26 +88,40 @@ struct ContentView: View {
                 }
             }
             
-            Button("顯示機率資訊") {
-                showProbabilities = true
+            // 下方功能按鈕
+            HStack(spacing: 20) {
+                Button("顯示機率資訊") {
+                    showProbabilities = true
+                }
+                .padding()
+                .background(Color.orange)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                
+                Button("每日遊玩記錄") {
+                    showRecords = true
+                }
+                .padding()
+                .background(Color.purple)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                
+                // 顯示評分標準
+                Button("評分標準") {
+                    showLuckLevelStandards = true
+                }
+                .padding()
+                .background(Color.gray)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
-            .padding()
-            .background(Color.orange)
-            .foregroundColor(.white)
-            .cornerRadius(10)
             
-            Button("每日遊玩記錄") {
-                showRecords = true
-            }
-            .padding()
-            .background(Color.purple)
-            .foregroundColor(.white)
-            .cornerRadius(10)
+            Spacer()
         }
         .alert("今天遊玩次數已達上限！", isPresented: $showAlert) {
             Button("好") { }
         }
-        .padding()
+        .padding(.bottom, 30)
         .onAppear {
             AudioManager.shared.playSound("start")
         }
@@ -103,7 +131,10 @@ struct ContentView: View {
         .sheet(isPresented: $showRecords) {
             DailyRecordsView(recordManager: recordManager)
         }
-        // 當遊戲結束時根據最新數據更新當日最高紀錄（只記錄一次）
+        .sheet(isPresented: $showLuckLevelStandards) {
+            LuckLevelStandardsView()
+        }
+        // 遊戲結束後記錄該局結果（只記一次）
         .onChange(of: game.isGameOver) { newValue in
             if newValue && !hasRecordedResult {
                 let dateString = Date().formatted(.dateTime.year().month().day())
@@ -123,16 +154,20 @@ struct ContentView: View {
 }
 
 
+
 struct ProbabilityView: View {
     @Environment(\.dismiss) var dismiss
 
+    // 固定的演算子機率
     let operatorProbabilities: [(name: String, probability: Double)] = [
         ("加法 (+)", 60),
         ("減法 (-)", 20),
         ("乘法 (×)", 20)
     ]
     
-    let numberProbabilities = Option.numberProbabilities()  // 假設此函式已存在，回傳 [(number: Int, probability: Double)]
+    // 假設此函式已存在於 Option 結構內
+    // static func numberProbabilities() -> [(number: Int, probability: Double)]
+    let numberProbabilities = Option.numberProbabilities()
     
     var body: some View {
         NavigationView {
@@ -151,16 +186,22 @@ struct ProbabilityView: View {
                         HStack {
                             Text("數字 \(item.number)")
                             Spacer()
+                            
+                            // 依照不同區間格式化
                             let formattedProbability: String = {
                                 if item.probability < 0.01 {
-                                    return String(format: "%.2e", item.probability)
+                                    // 小於 0.01 時，顯示 8 位小數
+                                    // e.g. 0.00001234
+                                    return String(format: "%.8f", item.probability)
                                 } else {
                                     return String(format: "%.2f", item.probability)
                                 }
                             }()
-                            if item.number >= 40 {
+                            
+                            // 若是 40~50，並且 < 0.01，就縮小字體
+                            if item.number >= 40 && item.probability < 0.01 {
                                 Text("\(formattedProbability)%")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 12))
                                     .minimumScaleFactor(0.5)
                             } else {
                                 Text("\(formattedProbability)%")
@@ -172,7 +213,9 @@ struct ProbabilityView: View {
             .navigationTitle("機率資訊")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("關閉") { dismiss() }
+                    Button("關閉") {
+                        dismiss()
+                    }
                 }
             }
         }
