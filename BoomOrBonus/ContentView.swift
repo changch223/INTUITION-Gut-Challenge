@@ -192,20 +192,15 @@ struct ProbabilityView: View {
                                 if item.probability < 0.01 {
                                     // 小於 0.01 時，顯示 8 位小數
                                     // e.g. 0.00001234
-                                    return String(format: "%.8f", item.probability)
+                                    return String(format: "%.5f", item.probability)
                                 } else {
                                     return String(format: "%.2f", item.probability)
                                 }
                             }()
                             
-                            // 若是 40~50，並且 < 0.01，就縮小字體
-                            if item.number >= 40 && item.probability < 0.01 {
-                                Text("\(formattedProbability)%")
-                                    .font(.system(size: 12))
-                                    .minimumScaleFactor(0.5)
-                            } else {
-                                Text("\(formattedProbability)%")
-                            }
+                            
+                            Text("\(formattedProbability)%")
+                            
                         }
                     }
                 }
