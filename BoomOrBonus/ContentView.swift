@@ -1,6 +1,17 @@
 import SwiftData
 import SwiftUI
 
+struct IconTransparent: View {
+    var body: some View {
+        // 這裡採用 system image "star.fill" 作為示範圖示
+        Image("IconTransparent")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundColor(.blue)
+            .opacity(0.7) // 設定透明度
+    }
+}
+
 struct ContentView: View {
     @StateObject private var game = GameLogic()
     @StateObject private var recordManager = GameRecordManager()
@@ -14,27 +25,27 @@ struct ContentView: View {
     @State private var showRecords = false
     @State private var showLuckLevelStandards = false
     @State private var hasRecordedResult = false
-
+    
     @State private var encouragementMessage: String = ""
     @State private var showEncouragement: Bool = false
-
+    
     // 14 個鼓勵訊息的 key
-        let encouragementKeys = [
-            "Encouragement1",
-            "Encouragement2",
-            "Encouragement3",
-            "Encouragement4",
-            "Encouragement5",
-            "Encouragement6",
-            "Encouragement7",
-            "Encouragement8",
-            "Encouragement9",
-            "Encouragement10",
-            "Encouragement11",
-            "Encouragement12",
-            "Encouragement13",
-            "Encouragement14",
-        ]
+    let encouragementKeys = [
+        "Encouragement1",
+        "Encouragement2",
+        "Encouragement3",
+        "Encouragement4",
+        "Encouragement5",
+        "Encouragement6",
+        "Encouragement7",
+        "Encouragement8",
+        "Encouragement9",
+        "Encouragement10",
+        "Encouragement11",
+        "Encouragement12",
+        "Encouragement13",
+        "Encouragement14",
+    ]
     
     var body: some View {
         ZStack {
@@ -47,7 +58,17 @@ struct ContentView: View {
             .ignoresSafeArea()
             
             VStack(spacing: 20) {
-                Spacer()
+                // 新增上方 Header，包含 IconTransparent 與 Google AdMob Banner
+                VStack(spacing: 10) {
+                    // 假設 IconTransparent 是一個自定義 View
+                    IconTransparent()
+                        .frame(width: 100, height: 100)
+                    
+                    // 假設 GoogleAdBanner 是你封裝好的 Google AdMob Banner 視圖
+                    //GoogleAdBanner()
+                    //    .frame(height: 50)
+                }.padding(.top, 20)
+                
                 
                 // 遊戲標題
                 Text("GameTitle")
@@ -227,46 +248,49 @@ struct ContentView: View {
                     .font(.headline)
                     .padding(.bottom, 10)
                 
+                BannerAdView(adUnitID: "ca-app-pub-9275380963550837/2702683361")
+                    .frame(height: 50)
+                
             }
         }
-            .alert("AttemptsLimitReached", isPresented: $showAlert) {
-                Button("OK") { }
+        .alert("AttemptsLimitReached", isPresented: $showAlert) {
+            Button("OK") { }
+        }
+        .onAppear {
+            let currentDateString = Date().formatted(.dateTime.year().month().day())
+            if lastResetDate != currentDateString {
+                dailyAttempts = 0
+                maxAttempts = 5
+                lastResetDate = currentDateString
             }
-            .onAppear {
-                let currentDateString = Date().formatted(.dateTime.year().month().day())
-                if lastResetDate != currentDateString {
-                    dailyAttempts = 0
-                    maxAttempts = 5
-                    lastResetDate = currentDateString
-                }
-                AudioManager.shared.playSound("start")
-            }
-            .sheet(isPresented: $showProbabilities) {
-                ProbabilityView()
-            }
-            .sheet(isPresented: $showRecords) {
-                DailyRecordsView(recordManager: recordManager)
-            }
-            .sheet(isPresented: $showLuckLevelStandards) {
-                LuckLevelStandardsView()
-            }
-            .onChange(of: game.isGameOver) { newValue in
-                if newValue && !hasRecordedResult {
-                    let dateString = Date().formatted(.dateTime.year().month().day())
-                    let record = GameRecord(
-                        id: UUID(),
-                        date: dateString,
-                        score: game.luckScore,
-                        finalValue: game.currentValue,
-                        levelsPassed: game.levelsPassed,
-                        luckLevel: LuckLevel.level(currentValue: game.currentValue)
-                    )
-                    recordManager.addOrUpdateRecord(record: record)
-                    hasRecordedResult = true
-                }
+            AudioManager.shared.playSound("start")
+        }
+        .sheet(isPresented: $showProbabilities) {
+            ProbabilityView()
+        }
+        .sheet(isPresented: $showRecords) {
+            DailyRecordsView(recordManager: recordManager)
+        }
+        .sheet(isPresented: $showLuckLevelStandards) {
+            LuckLevelStandardsView()
+        }
+        .onChange(of: game.isGameOver) { newValue in
+            if newValue && !hasRecordedResult {
+                let dateString = Date().formatted(.dateTime.year().month().day())
+                let record = GameRecord(
+                    id: UUID(),
+                    date: dateString,
+                    score: game.luckScore,
+                    finalValue: game.currentValue,
+                    levelsPassed: game.levelsPassed,
+                    luckLevel: LuckLevel.level(currentValue: game.currentValue)
+                )
+                recordManager.addOrUpdateRecord(record: record)
+                hasRecordedResult = true
             }
         }
     }
+}
 
 struct GameButtonStyle: ButtonStyle {
     var backgroundColor: Color = .blue

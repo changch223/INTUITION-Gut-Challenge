@@ -1,0 +1,6 @@
+framework module Pods_BoomOrBonusTests {
+  umbrella header "Pods-BoomOrBonusTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
