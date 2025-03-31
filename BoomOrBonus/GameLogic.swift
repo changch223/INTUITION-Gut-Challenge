@@ -80,7 +80,7 @@ class GameLogic: ObservableObject {
     @Published var currentValue: Int = 0
     @Published var options: [Option] = Option.generatePair()
     @Published var isGameOver = false
-    @Published var luckScore: Int = 0          // 安全選項次數（得分）
+    @Published var IntuitionScore: Int = 0          // 安全選項次數（得分）
     @Published var levelsPassed: Int = 0       // 闖關數
     
     func selectOption(_ option: Option) {
@@ -88,7 +88,7 @@ class GameLogic: ObservableObject {
             isGameOver = true
         } else {
             currentValue = option.operation.apply(currentValue, option.number)
-            luckScore += 1
+            IntuitionScore += 1
             levelsPassed += 1
             options = Option.generatePair()
         }
@@ -96,7 +96,7 @@ class GameLogic: ObservableObject {
     
     func resetGame() {
         currentValue = 0
-        luckScore = 0
+        IntuitionScore = 0
         levelsPassed = 0
         isGameOver = false
         options = Option.generatePair()

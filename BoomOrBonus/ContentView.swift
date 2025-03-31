@@ -24,7 +24,7 @@ struct ContentView: View {
     @State private var showAlert = false
     @State private var showProbabilities = false
     @State private var showRecords = false
-    @State private var showLuckLevelStandards = false
+    @State private var showIntuitionLevelStandards = false
     @State private var hasRecordedResult = false
     
     @State private var encouragementMessage: String = ""
@@ -169,7 +169,7 @@ struct ContentView: View {
                             .fontWeight(.bold)
                             .multilineTextAlignment(.center)
                         
-                        // 分數卡片：突顯最終數值、闖關數與運氣評分
+                        // 分數卡片：突顯最終數值、闖關數與直覺評分
                         VStack(spacing: 15) {
                             Text("\(NSLocalizedString("FinalValue", comment: "最終數值前綴")) \(game.currentValue)")
                                 .font(.title2)
@@ -179,7 +179,7 @@ struct ContentView: View {
                                 .font(.title2)
                                 .fontWeight(.semibold)
                             
-                            Text("\(NSLocalizedString("LuckScore", comment: "運氣評分前綴")) \(LuckLevel.level(currentValue: game.currentValue))")
+                            Text("\(NSLocalizedString("IntuitionScore", comment: "直覺評分前綴")) \(IntuitionLevel.level(currentValue: game.currentValue))")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.orange)
@@ -239,7 +239,7 @@ struct ContentView: View {
                     Button("RatingStandards") {
                         AudioManager.shared.playSound("Click")
                         HapticManager.shared.playClick()
-                        showLuckLevelStandards = true
+                        showIntuitionLevelStandards = true
                     }
                     .buttonStyle(GameButtonStyle(backgroundColor: .gray))
                 }
@@ -265,8 +265,8 @@ struct ContentView: View {
                     .font(.headline)
                     .padding(.bottom, 10)
                 
-                BannerAdView(adUnitID: "ca-app-pub-9275380963550837/2702683361")
-                    .frame(height: 50)
+                //BannerAdView(adUnitID: "ca-app-pub-9275380963550837/2702683361")
+                //    .frame(height: 50)
                 
             }
         }
@@ -291,8 +291,8 @@ struct ContentView: View {
         .sheet(isPresented: $showRecords) {
             DailyRecordsView(recordManager: recordManager)
         }
-        .sheet(isPresented: $showLuckLevelStandards) {
-            LuckLevelStandardsView()
+        .sheet(isPresented: $showIntuitionLevelStandards) {
+            IntuitionLevelStandardsView()
         }
         .onChange(of: game.isGameOver) { newValue in
             if newValue && !hasRecordedResult {
@@ -300,10 +300,10 @@ struct ContentView: View {
                 let record = GameRecord(
                     id: UUID(),
                     date: dateString,
-                    score: game.luckScore,
+                    score: game.IntuitionScore,
                     finalValue: game.currentValue,
                     levelsPassed: game.levelsPassed,
-                    luckLevel: LuckLevel.level(currentValue: game.currentValue)
+                    IntuitionLevel: IntuitionLevel.level(currentValue: game.currentValue)
                 )
                 recordManager.addOrUpdateRecord(record: record)
                 hasRecordedResult = true

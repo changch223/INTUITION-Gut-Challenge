@@ -6,32 +6,36 @@
 //
 
 /* アプリタイトル＆メインビュー */
-"GameTitle" = "今日の運勢、試してみる？";
-"GameDescription" = "究極の二択ゲーム！50%の確率で爆弾、運命の神様に挑もう！あなたはラッキー？それとも地雷ホイホイ？";
-"RemainingAttempts" = "残り挑戦回数：";
+"GameTitle" = "あなたの直感力はどれくらい？";
+"GameDescription" = "2択の極限チャレンジ！直感で安全な選択肢を選ぼう。何ステージ突破できる？直感マスター、それとも勘まかせ？";
+
+"RemainingAttempts" = "残りの挑戦回数：";
 "CurrentValue" = "現在のスコア：";
 "LevelsPassedPrefix" = "あなたはすでに";
-"LevelsPassedSuffix" = "ステージ突破！運に賭ける？それとも撤退する？";
-"GameOver" = "ドカーン！運、尽きた…！";
+"LevelsPassedSuffix" = "ステージ突破！このまま直感を信じて進む？";
+
+"GameOver" = "あらら～今回は外れちゃった！";
 "FinalValue" = "最終スコア：";
 "LevelsPassed" = "突破したステージ数：";
-"LuckScore" = "あなたのラッキー指数：";
-"Restart" = "悔しい？もう一回チャレンジ！";
 
-"Encouragement1" = "幸運はあなたの味方だ！";
-"Encouragement2" = "連勝中！その勢いを感じろ！";
-"Encouragement3" = "幸運の女神が微笑んでいる！";
-"Encouragement4" = "大胆に進め、幸運は勇者に宿る！";
-"Encouragement5" = "あなたの運命が輝きを増している！";
-"Encouragement6" = "よくやった！幸運が秘密兵器だ！";
-"Encouragement7" = "一歩一歩が勝利への階段だ！";
-"Encouragement8" = "止められない成功、レベルアップ中！";
-"Encouragement9" = "あなたのラッキーチャームが奇跡を起こす！";
-"Encouragement10" = "運命を味方につけた、勝利はすぐそこだ！";
-"Encouragement11" = "ラッキークローバーを引いたよ！🍀";
-"Encouragement12" = "ギリギリセーフ！今日の運勢SSランク！";
-"Encouragement13" = "やば！マジで持ってるね！";
-"Encouragement14" = "これは天に選ばれし者の運。";
+"IntuitionScore" = "直感ランク：";
+"Restart" = "一度じゃ足りない！もう一度直感を信じて挑戦！";
+
+"Encouragement1" = "その選択、最高！🍀";
+"Encouragement2" = "ギリギリセーフ！すごい！";
+"Encouragement3" = "その直感、宝くじレベル 🎯";
+"Encouragement4" = "すごい精度！";
+"Encouragement5" = "今日の直感、キレキレ！";
+"Encouragement6" = "連勝中！絶好調！";
+"Encouragement7" = "運が味方してる！";
+"Encouragement8" = "恐れずに選んだ、その直感が正解！";
+"Encouragement9" = "あなたの直感が輝いてる！";
+"Encouragement10" = "さすが！直感はあなたのスーパーパワー！";
+"Encouragement11" = "勝利に一歩近づいた！";
+"Encouragement12" = "止められない勢い！";
+"Encouragement13" = "やっぱり感覚は正しかった！";
+"Encouragement14" = "流れを変えた！勝利目前！";
+
 
 
 /* ボタン＆アラート */
@@ -57,26 +61,26 @@
 "FinalValueRecord" = "最終値：";
 "SafeOptionsLevels" = "セーフオプション数：";
 "LevelsPassedRecord" = "突破ステージ：";
-"LuckRating" = "運の評価：";
+"IntuitionRating" = "直感の評価：";
 
-/* 運評価（Luck Level） */
-"LuckLevel_VeryBad" = "大厄ProMax";
-"LuckLevel_ExtremelyBad" = "大厄";
-"LuckLevel_Terrible" = "不幸";
-"LuckLevel_Bad" = "やや不幸";
-"LuckLevel_SlightlyBad" = "まあ普通";
-"LuckLevel_Average" = "末吉";
-"LuckLevel_Fair" = "小吉";
-"LuckLevel_SmallBlessing" = "中吉";
-"LuckLevel_MediumBlessing" = "幸運";
-"LuckLevel_BigBlessing" = "大吉";
-"LuckLevel_VeryGood" = "スーパーラッキー";
-"LuckLevel_SuperGood" = "伝説の幸運";
-"LuckLevel_Legendary" = "神ってる";
-"LuckLevel_God" = "究極神ってる";
-"LuckLevel_GodProMax" = "究極神ってるProMax";
+/* Intuition Level */
+"IntuitionLevel_VeryBad" = "全然直感なし";
+"IntuitionLevel_ExtremelyBad" = "直感が完全に外れ";
+"IntuitionLevel_Terrible" = "とても運が悪い";
+"IntuitionLevel_Bad" = "完全に迷走中";
+"IntuitionLevel_SlightlyBad" = "直感が少し鈍い";
+"IntuitionLevel_Average" = "平均的";
+"IntuitionLevel_Fair" = "少し冴えてる";
+"IntuitionLevel_SmallBlessing" = "直感アップ";
+"IntuitionLevel_MediumBlessing" = "かなり正確";
+"IntuitionLevel_BigBlessing" = "直感マスター";
+"IntuitionLevel_VeryGood" = "予知能力MAX";
+"IntuitionLevel_SuperGood" = "直感の天才";
+"IntuitionLevel_Legendary" = "AIも敵わない";
+"IntuitionLevel_God" = "直感の神 降臨!";
+"IntuitionLevel_GodProMax" = "直感の神ProMax";
 
-/* 運評価レンジの説明 */
+/* 直感評価レンジの説明 */
 "Range_VeryBad" = "final score < -49";
 "Range_ExtremelyBad" = "-50 ~ -9";
 "Range_Terrible" = "-10 ~ -1";

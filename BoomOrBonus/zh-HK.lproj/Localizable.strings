@@ -6,8 +6,9 @@
 //
 
 /* App Titles & Main View */
-"GameTitle" = "你今天的運氣如何？";
-"GameDescription" = "極限二選一！50% 機率踩到炸彈，一路闖關挑戰命運之神！你，是幸運還是地雷磁鐵？";
+"GameTitle" = "你的直覺力有多強？"; //
+"GameDescription" = "二選一極限挑戰！憑直覺選出安全選項，能闖過幾關就看你的感覺！你，是直覺達人，還是亂猜高手？"; //
+
 "RemainingAttempts" = "剩餘挑戰次數：";
 "CurrentValue" = "你目前的總分：";
 "LevelsPassedPrefix" = "你已驚險闖過";
@@ -16,24 +17,38 @@
 "GameOver" = "啊嘞～怎麼就爆炸了呢？";
 "FinalValue" = "你最後的總分是：";
 "LevelsPassed" = "總共闖關：";
-"LuckScore" = "你的運氣指數是：";
 
-"Restart" = "命運不能輸第二次，再來！";
 
-"Encouragement1" = "哇！你踩到的是幸運草 🍀";
+"IntuitionScore" = "直覺力等級："; //
+"Restart" = "直覺不能只靠一次，再試一次！"; //
+
+
+"Encouragement1" = "你剛剛的選擇太神啦 🍀"; //
+
 "Encouragement2" = "差點就GG了！你也太歐了吧？";
 "Encouragement3" = "這運氣能買樂透了 🎯";
 "Encouragement4" = "逆天改命，這是天選之人！";
-"Encouragement5" = "好運在你身邊！";
+
+"Encouragement5" = "今天的直覺感度100%！";//
+
 "Encouragement6" = "你正處於連勝的狀態！";
 "Encouragement7" = "成功之神正對你微笑！";
 "Encouragement8" = "勇者無懼，幸運常伴！";
-"Encouragement9" = "命運之光為你閃耀！";
-"Encouragement10" = "幹得好，運氣是你的秘密武器！";
+
+
+"Encouragement9" = "你的直覺閃耀全場";//
+
+
+"Encouragement10" = "幹得好，直覺力才是你的超能力！";//
+
 "Encouragement11" = "每一步都讓你更接近勝利！";
 "Encouragement12" = "層層突破，成功無法阻擋！";
-"Encouragement13" = "你的幸運符正在發揮奇效！";
+
+"Encouragement13" = "你的感覺果然有根據！";//
+
 "Encouragement14" = "你已經扭轉局勢，勝利在望！";
+
+
 
 
 /* 按鈕及提示 */
@@ -59,26 +74,26 @@
 "FinalValueRecord" = "最終數值：";
 "SafeOptionsLevels" = "安全選項數：";
 "LevelsPassedRecord" = "闖關：";
-"LuckRating" = "運氣評分：";
+"IntuitionRating" = "運氣評分：";
 
-/* Luck Level（使用於評分與標準） */
-"LuckLevel_VeryBad" = "運氣爆炸差";
-"LuckLevel_ExtremelyBad" = "運氣極差";
-"LuckLevel_Terrible" = "倒楣透頂";
-"LuckLevel_Bad" = "運氣不佳";
-"LuckLevel_SlightlyBad" = "運氣稍差";
-"LuckLevel_Average" = "普通水準";
-"LuckLevel_Fair" = "運氣尚可";
-"LuckLevel_SmallBlessing" = "小吉";
-"LuckLevel_MediumBlessing" = "中吉";
-"LuckLevel_BigBlessing" = "大吉";
-"LuckLevel_VeryGood" = "運氣極好";
-"LuckLevel_SuperGood" = "超級好運";
-"LuckLevel_Legendary" = "歐皇現世";
-"LuckLevel_God" = "運氣之神降臨";
-"LuckLevel_GodProMax" = "運氣之神降臨ProMax";
+/* Intuition Level（使用於評分與標準） */
+"IntuitionLevel_VeryBad" = "毫無直覺";
+"IntuitionLevel_ExtremelyBad" = "直覺大走鐘";
+"IntuitionLevel_Terrible" = "倒楣透頂";
+"IntuitionLevel_Bad" = "感直覺迷路了";
+"IntuitionLevel_SlightlyBad" = "感覺不太靈";
+"IntuitionLevel_Average" = "普通水準";
+"IntuitionLevel_Fair" = "小有靈感";
+"IntuitionLevel_SmallBlessing" = "預感強到爆";
+"IntuitionLevel_MediumBlessing" = "神準直覺";
+"IntuitionLevel_BigBlessing" = "歐皇現世";
+"IntuitionLevel_VeryGood" = "預知感 MAX";
+"IntuitionLevel_SuperGood" = "直覺奇才現身";
+"IntuitionLevel_Legendary" = "預測 AI 都輸你";
+"IntuitionLevel_God" = "直覺之神降臨";
+"IntuitionLevel_GodProMax" = "直覺之神降臨ProMax";
 
-/* Luck Level Range 描述 */
+/* Intuition Level Range 描述 */
 "Range_VeryBad" = "final score < -49";
 "Range_ExtremelyBad" = "-50 ~ -9";
 "Range_Terrible" = "-10 ~ -1";

@@ -6,41 +6,44 @@
 //
 
 /* App Titles & Main View */
-"GameTitle" = "How Lucky Are You Today?";
-"GameDescription" = "The ultimate 50/50 game! Dodge the bomb or boom! Are you lucky... or just cursed? 🎲💣";
-"RemainingAttempts" = "Remaining Attempts:";
-"CurrentValue" = "Current Score:";
-"LevelsPassedPrefix" = "You’ve survived through";
-"LevelsPassedSuffix" = "levels. Keep going?";
-"GameOver" = "BOOM! Your luck just ran out!";
-"FinalValue" = "Final Score:";
-"LevelsPassed" = "Levels Cleared:";
-"LuckScore" = "Luck Rating:";
-"Restart" = "Not done yet? Try Again! 🔁";
+/* App Titles & Main View */
+"GameTitle" = "How strong is your intuition?";
+"GameDescription" = "The ultimate 2-choice challenge! Pick the safe option using your intuition. How far can you go? Are you an intuition master or just a lucky guesser?";
 
-"Encouragement1" = "Luck is on your side!";
-"Encouragement2" = "You're on a winning streak!";
-"Encouragement3" = "Success smiles upon you!";
-"Encouragement4" = "Fortune favors the bold!";
-"Encouragement5" = "Your destiny is shining bright!";
-"Encouragement6" = "Great job, luck was your secret weapon!";
-"Encouragement7" = "Every step brings you closer to victory!";
-"Encouragement8" = "Unstoppable success, one level at a time!";
-"Encouragement9" = "Your lucky charm is working wonders!";
-"Encouragement10" = "You've turned the odds in your favor!";
-"Encouragement11" = "Whoa! You stepped on a lucky clover! 🍀";
-"Encouragement12" = "That was close! You're on a hot streak!";
-"Encouragement13" = "You're seriously blessed today!";
-"Encouragement14" = "Defying the odds like a chosen one!";
+"RemainingAttempts" = "Remaining attempts:";
+"CurrentValue" = "Your current score:";
+"LevelsPassedPrefix" = "You've survived";
+"LevelsPassedSuffix" = "rounds. Will you trust your gut and keep going?";
+
+"GameOver" = "Oops—your intuition missed this time!";
+"FinalValue" = "Your final score:";
+"LevelsPassed" = "Total levels cleared:";
+
+"IntuitionScore" = "Intuition Rank:";
+"Restart" = "One try isn’t enough—trust your intuition again!";
+
+"Encouragement1" = "Amazing choice! 🍀";
+"Encouragement2" = "That was close! Lucky guess?";
+"Encouragement3" = "That’s lotto-level intuition 🎯";
+"Encouragement4" = "That was insane accuracy!";
+"Encouragement5" = "Your intuition is on fire today!";
+"Encouragement6" = "You're on a hot streak!";
+"Encouragement7" = "Success is smiling upon you!";
+"Encouragement8" = "Fearless moves bring great rewards!";
+"Encouragement9" = "Your intuition is shining!";
+"Encouragement10" = "Nice! Your intuition is your superpower!";
+"Encouragement11" = "Every step takes you closer to victory!";
+"Encouragement12" = "You're unstoppable!";
+"Encouragement13" = "Your gut feeling was right!";
+"Encouragement14" = "You’ve turned the tide—victory ahead!";
 
 
-
-/* Buttons & Alerts */
-"ProbabilityInfo" = "Probability Information";
+/* Buttons and Alerts */
+"ProbabilityInfo" = "Probability Info";
 "GameRecords" = "Game Records";
-"RatingStandards" = "Rating Standards";
-"ExtraAttempts" = "Get 3 Extra Chances";
-"AttemptsLimitReached" = "Today's attempts have reached the limit!";
+"RatingStandards" = "Ranking";
+"ExtraAttempts" = "Get 3 Extra Attempts";
+"AttemptsLimitReached" = "You've used all your attempts today!";
 "OK" = "OK";
 "Close" = "Close";
 
@@ -55,29 +58,29 @@
 /* Daily Records View */
 "DailyRecordsTitle" = "Daily High Scores";
 "Date" = "Date:";
-"FinalValueRecord" = "Final Value:";
-"SafeOptionsLevels" = "Safe Options:";
-"LevelsPassedRecord" = "Levels:";
-"LuckRating" = "Luck Rating:";
+"FinalValueRecord" = "Final Score:";
+"SafeOptionsLevels" = "Safe Choices:";
+"LevelsPassedRecord" = "Rounds:";
+"IntuitionRating" = "Intuition Rating:";
 
-/* Luck Level */
-"LuckLevel_VeryBad" = "Disastrously Unlucky";
-"LuckLevel_ExtremelyBad" = "Extremely Unlucky";
-"LuckLevel_Terrible" = "Terribly Unlucky";
-"LuckLevel_Bad" = "Unlucky";
-"LuckLevel_SlightlyBad" = "Slightly Unlucky";
-"LuckLevel_Average" = "Average";
-"LuckLevel_Fair" = "Decent Luck";
-"LuckLevel_SmallBlessing" = "Minor Blessing";
-"LuckLevel_MediumBlessing" = "Moderate Blessing";
-"LuckLevel_BigBlessing" = "Major Blessing";
-"LuckLevel_VeryGood" = "Very Lucky";
-"LuckLevel_SuperGood" = "Super Lucky";
-"LuckLevel_Legendary" = "Legendary Luck";
-"LuckLevel_God" = "Godlike Luck";
-"LuckLevel_GodProMax" = "Ultimate Godlike Luck";
+/* Intuition Level */
+"IntuitionLevel_VeryBad" = "No intuition at all";
+"IntuitionLevel_ExtremelyBad" = "Way off";
+"IntuitionLevel_Terrible" = "Super unlucky";
+"IntuitionLevel_Bad" = "Completely lost";
+"IntuitionLevel_SlightlyBad" = "Not very accurate";
+"IntuitionLevel_Average" = "Average";
+"IntuitionLevel_Fair" = "Slightly intuitive";
+"IntuitionLevel_SmallBlessing" = "Very intuitive";
+"IntuitionLevel_MediumBlessing" = "Highly accurate";
+"IntuitionLevel_BigBlessing" = "Master of Intuition";
+"IntuitionLevel_VeryGood" = "Prediction Max";
+"IntuitionLevel_SuperGood" = "Intuition Genius";
+"IntuitionLevel_Legendary" = "Even AI can't keep up";
+"IntuitionLevel_God" = "God of Intuition";
+"IntuitionLevel_GodProMax" = "God of Intuition Pro Max";
 
-/* Luck Level Range Descriptions */
+/* Intuition Level Range */
 "Range_VeryBad" = "final score < -49";
 "Range_ExtremelyBad" = "-50 ~ -9";
 "Range_Terrible" = "-10 ~ -1";

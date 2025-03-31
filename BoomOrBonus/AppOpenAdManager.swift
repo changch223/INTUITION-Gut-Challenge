@@ -21,7 +21,7 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
     private var appOpenAd: AppOpenAd? // 廣告實體
     private var isLoadingAd = false  // 是否正在載入中
     private var isAdBeingShown = false // 廣告是否正在顯示中
-    private let adUnitID = "ca-app-pub-9275380963550837/4495279208" // ← AdMob のユニット ID を入力
+    private let adUnitID = "ca-app-pub-9275380963550837/4495279208"
     
     func loadAd() {
         // 如果正在載入中就直接返回
@@ -89,47 +89,3 @@ extension AppOpenAdManager {
 
 
 
-// MARK: - AdManager: 管理插頁廣告載入與展示
-class AdManager: NSObject, FullScreenContentDelegate, ObservableObject {
-    static let shared = AdManager()
-    
-    var interstitial: InterstitialAd?
-    
-    /// 當廣告關閉時的回呼，用來執行後續動作（例如重置遊戲）
-    var adDidDismissFullScreenContentCallback: (() -> Void)?
-    
-    /// 載入插頁廣告
-    func loadInterstitial() {
-        let request = Request()
-        InterstitialAd.load(with:"ca-app-pub-9275380963550837/2175736616", // 請替換成你的 adUnitID
-                               request: request) { [weak self] ad, error in
-            if let error = error {
-                print("Failed to load interstitial ad: \(error.localizedDescription)")
-                return
-            }
-            self?.interstitial = ad
-            self?.interstitial?.fullScreenContentDelegate = self
-        }
-    }
-    
-    /// 展示插頁廣告
-    func showInterstitial(from root: UIViewController) {
-        if let interstitial = interstitial {
-            interstitial.present(from: root)
-        } else {
-            print("Interstitial ad wasn't ready")
-            // 若廣告未載入成功，可直接呼叫回呼重置遊戲
-            adDidDismissFullScreenContentCallback?()
-        }
-    }
-    
-    // MARK: - GADFullScreenContentDelegate
-    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        // 廣告關閉後重新載入下一支廣告
-        loadInterstitial()
-        // 執行回呼，例如開始新遊戲
-        adDidDismissFullScreenContentCallback?()
-    }
-    
-    // 可根據需求加入其他 delegate 方法處理錯誤等
-}

@@ -6,33 +6,35 @@
 //
 
 /* App Titles & Main View */
-"GameTitle" = "今天的运气如何？";
-"GameDescription" = "极限二选一！50% 概率踩到炸弹，挑战命运之神！你，是幸运还是地雷吸铁石？";
+"GameTitle" = "你的直觉力有多强？";
+"GameDescription" = "二选一极限挑战！凭直觉选出安全选项，能闯过几关就看你的感觉！你，是直觉达人，还是乱猜高手？";
+
 "RemainingAttempts" = "剩余挑战次数：";
-"CurrentValue" = "当前总分：";
-"LevelsPassedPrefix" = "你已经闯过了";
-"LevelsPassedSuffix" = "关，要继续赌运气，还是见好就收？";
-"GameOver" = "BOOM！运气耗尽啦！";
-"FinalValue" = "你的最终得分：";
+"CurrentValue" = "你目前的总分：";
+"LevelsPassedPrefix" = "你已惊险闯过";
+"LevelsPassedSuffix" = "关，继续赌直觉还是见好就收？";
+
+"GameOver" = "哎呀～这次失误了！";
+"FinalValue" = "你最后的总分是：";
 "LevelsPassed" = "总共闯关：";
-"LuckScore" = "你的幸运指数是：";
-"Restart" = "不服气？再来一次！";
 
-"Encouragement1" = "好运在你身边！";
-"Encouragement2" = "你正处于连胜状态！";
-"Encouragement3" = "成功之神正向你微笑！";
-"Encouragement4" = "勇者无惧，幸运常伴！";
-"Encouragement5" = "命运之光为你闪耀！";
-"Encouragement6" = "干得好，运气是你的秘密武器！";
-"Encouragement7" = "每一步都让你更接近胜利！";
-"Encouragement8" = "层层突破，成功无法阻挡！";
-"Encouragement9" = "你的幸运符正在发挥奇效！";
-"Encouragement10" = "你已经扭转局势，胜利在望！";
-"Encouragement11" = "哇！你踩到的是幸运草 🍀";
-"Encouragement12" = "差点就GG了！今天你欧到爆！";
-"Encouragement13" = "天选之子就是你！";
-"Encouragement14" = "逆天改命！玄学满分！";
+"IntuitionScore" = "直觉力等级：";
+"Restart" = "直觉不能只靠一次，再试一次！";
 
+"Encouragement1" = "你刚刚的选择太神啦 🍀";
+"Encouragement2" = "差点就GG了！你太欧了吧？";
+"Encouragement3" = "这直觉能去买彩票了 🎯";
+"Encouragement4" = "神准预判，太强了！";
+"Encouragement5" = "今天的直觉感应超灵！";
+"Encouragement6" = "你正处于连胜状态！";
+"Encouragement7" = "成功正在向你招手！";
+"Encouragement8" = "勇者无惧，直觉常在！";
+"Encouragement9" = "你的直觉闪耀全场！";
+"Encouragement10" = "厉害！直觉力就是你的超能力！";
+"Encouragement11" = "每一步都离胜利更近！";
+"Encouragement12" = "你势不可挡！";
+"Encouragement13" = "你的感觉果然靠谱！";
+"Encouragement14" = "你已经扭转战局，胜利在望！";
 
 
 /* 按钮及提示 */
@@ -40,7 +42,7 @@
 "GameRecords" = "游戏记录";
 "RatingStandards" = "评分标准";
 "ExtraAttempts" = "获得额外3次机会";
-"AttemptsLimitReached" = "今天游戏次数已达上限！";
+"AttemptsLimitReached" = "今天的游戏次数已达上限！";
 "OK" = "好";
 "Close" = "关闭";
 
@@ -58,26 +60,26 @@
 "FinalValueRecord" = "最终数值：";
 "SafeOptionsLevels" = "安全选项数：";
 "LevelsPassedRecord" = "闯关：";
-"LuckRating" = "运气评分：";
+"IntuitionRating" = "直觉评分：";
 
-/* Luck Level */
-"LuckLevel_VeryBad" = "运气爆炸差";
-"LuckLevel_ExtremelyBad" = "运气极差";
-"LuckLevel_Terrible" = "倒霉透顶";
-"LuckLevel_Bad" = "运气不佳";
-"LuckLevel_SlightlyBad" = "运气稍差";
-"LuckLevel_Average" = "普通水准";
-"LuckLevel_Fair" = "运气尚可";
-"LuckLevel_SmallBlessing" = "小吉";
-"LuckLevel_MediumBlessing" = "中吉";
-"LuckLevel_BigBlessing" = "大吉";
-"LuckLevel_VeryGood" = "运气极好";
-"LuckLevel_SuperGood" = "超级好运";
-"LuckLevel_Legendary" = "欧皇现世";
-"LuckLevel_God" = "运气之神降临";
-"LuckLevel_GodProMax" = "运气之神降临ProMax";
+/* Intuition Level */
+"IntuitionLevel_VeryBad" = "毫无直觉";
+"IntuitionLevel_ExtremelyBad" = "直觉跑偏了";
+"IntuitionLevel_Terrible" = "超级倒霉";
+"IntuitionLevel_Bad" = "完全迷路";
+"IntuitionLevel_SlightlyBad" = "感觉不太灵";
+"IntuitionLevel_Average" = "普通水准";
+"IntuitionLevel_Fair" = "略有直觉";
+"IntuitionLevel_SmallBlessing" = "算有直觉";
+"IntuitionLevel_MediumBlessing" = "神准预测";
+"IntuitionLevel_BigBlessing" = "直觉大师";
+"IntuitionLevel_VeryGood" = "预知力MAX";
+"IntuitionLevel_SuperGood" = "直觉天才";
+"IntuitionLevel_Legendary" = "AI都比不过你";
+"IntuitionLevel_God" = "直觉之神降临";
+"IntuitionLevel_GodProMax" = "直觉之神 Pro Max";
 
-/* Luck Level Range 描述 */
+/* Intuition Level Range */
 "Range_VeryBad" = "final score < -49";
 "Range_ExtremelyBad" = "-50 ~ -9";
 "Range_Terrible" = "-10 ~ -1";

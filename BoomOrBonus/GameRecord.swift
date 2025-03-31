@@ -13,7 +13,7 @@ struct GameRecord: Identifiable, Codable {
     let score: Int       // 安全選項數（得分）
     let finalValue: Int  // 遊戲結束時的最終數值
     let levelsPassed: Int
-    let luckLevel: String
+    let IntuitionLevel: String
 }
 
 class GameRecordManager: ObservableObject {

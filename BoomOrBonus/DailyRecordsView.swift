@@ -20,7 +20,7 @@ struct DailyRecordsView: View {
                             .font(.headline)
                         Text("\(NSLocalizedString("FinalValueRecord", comment: "最終數值前綴")) \(record.finalValue)")
                         Text("\(NSLocalizedString("LevelsPassedRecord", comment: "闖關數前綴")) \(record.levelsPassed)")
-                        Text("\(NSLocalizedString("LuckRating", comment: "運氣評分前綴")) \(record.luckLevel)")
+                        Text("\(NSLocalizedString("IntuitionRating", comment: "直覺評分前綴")) \(record.IntuitionLevel)")
                     }
                     .padding(5)
                 }
