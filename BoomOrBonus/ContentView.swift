@@ -13,6 +13,7 @@ struct IconTransparent: View {
 }
 
 struct ContentView: View {
+    
     @StateObject private var game = GameLogic()
     @StateObject private var recordManager = GameRecordManager()
     
@@ -48,6 +49,10 @@ struct ContentView: View {
     ]
     
     var body: some View {
+        // 取得螢幕寬度，依據裝置大小調整字體
+        let screenWidth = UIScreen.main.bounds.width
+        let isSmallDevice = screenWidth < 375 // iPhone SE 或 iPhone 13 mini
+        
         ZStack {
             // 背景漸層
             LinearGradient(
@@ -75,6 +80,8 @@ struct ContentView: View {
                     .font(.largeTitle)
                     .bold()
                     .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                     
                 
                 // 遊戲說明
                 Text(NSLocalizedString("GameDescription", comment: "遊戲說明"))
@@ -82,9 +89,9 @@ struct ContentView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                     .padding(.bottom, 10)
-                
-                
-                
+                    .fixedSize(horizontal: false, vertical: true) // 允許多行換行
+                    .minimumScaleFactor(0.6)
+                                
                 // 當前數值
                 Text("\(NSLocalizedString("CurrentValue", comment: "當前數值前綴")) \(game.currentValue)")
                     .font(.title)
@@ -92,6 +99,8 @@ struct ContentView: View {
                     .padding(.horizontal)
                     .fontWeight(.semibold)
                     .foregroundColor(.orange)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
                 
                 // 闖關數
                 Text("\(NSLocalizedString("LevelsPassedPrefix", comment: "前綴文字：例如『你已闖了』")) \(game.levelsPassed) \(NSLocalizedString("LevelsPassedSuffix", comment: "後綴文字：例如『關』"))")
@@ -99,6 +108,8 @@ struct ContentView: View {
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 10)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
                 
                 
                 if !game.isGameOver {
@@ -239,7 +250,13 @@ struct ContentView: View {
                 Button("ExtraAttempts") {
                     AudioManager.shared.playSound("Click")
                     HapticManager.shared.playClick()
-                    maxAttempts += 3
+                    if let rootVC = UIApplication.rootViewController {
+                            RewardedAdManager.shared.showAd(from: rootVC) {
+                                maxAttempts += 3
+                            }
+                    } else {
+                        print("❗找不到 rootViewController")
+                    }
                 }
                 .buttonStyle(GameButtonStyle(backgroundColor: .pink))
                 
@@ -258,12 +275,15 @@ struct ContentView: View {
         }
         .onAppear {
             let currentDateString = Date().formatted(.dateTime.year().month().day())
-            if lastResetDate != currentDateString {
-                dailyAttempts = 0
-                maxAttempts = 5
-                lastResetDate = currentDateString
-            }
-            AudioManager.shared.playSound("start")
+                if lastResetDate != currentDateString {
+                    dailyAttempts = 0
+                    maxAttempts = 5
+                    lastResetDate = currentDateString
+                }
+                AudioManager.shared.playSound("start")
+
+                // ✅ 提前載入 Reward 廣告
+                RewardedAdManager.shared.loadRewardedAd()
         }
         .sheet(isPresented: $showProbabilities) {
             ProbabilityView()

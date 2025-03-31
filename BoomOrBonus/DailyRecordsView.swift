@@ -19,7 +19,7 @@ struct DailyRecordsView: View {
                         Text("\(NSLocalizedString("Date", comment: "日期前綴")) \(record.date)")
                             .font(.headline)
                         Text("\(NSLocalizedString("FinalValueRecord", comment: "最終數值前綴")) \(record.finalValue)")
-                        Text("\(NSLocalizedString("SafeOptionsLevels", comment: "安全選項數前綴")) \(record.score)  \(NSLocalizedString("LevelsPassedRecord", comment: "闖關數前綴")) \(record.levelsPassed)")
+                        Text("\(NSLocalizedString("LevelsPassedRecord", comment: "闖關數前綴")) \(record.levelsPassed)")
                         Text("\(NSLocalizedString("LuckRating", comment: "運氣評分前綴")) \(record.luckLevel)")
                     }
                     .padding(5)

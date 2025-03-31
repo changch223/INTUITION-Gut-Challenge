@@ -34,7 +34,10 @@ class GameRecordManager: ObservableObject {
     /// 新增或更新紀錄：若同一天已有紀錄則只保留得分較高的那筆
     func addOrUpdateRecord(record: GameRecord) {
         if let index = records.firstIndex(where: { $0.date == record.date }) {
-            if record.score > records[index].score {
+            let existing = records[index]
+            
+            if record.finalValue > existing.finalValue ||
+               (record.finalValue == existing.finalValue && record.levelsPassed > existing.levelsPassed) {
                 records[index] = record
             }
         } else {

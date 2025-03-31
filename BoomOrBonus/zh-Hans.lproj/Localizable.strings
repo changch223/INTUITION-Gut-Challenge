@@ -78,18 +78,18 @@
 "LuckLevel_GodProMax" = "运气之神降临ProMax";
 
 /* Luck Level Range 描述 */
-"Range_VeryBad" = "最终分数 < -50";
-"Range_ExtremelyBad" = "-50 ~ -10";
-"Range_Terrible" = "-10 ~ 0";
-"Range_Bad" = "0 ~ 3";
-"Range_SlightlyBad" = "3 ~ 5";
-"Range_Average" = "5 ~ 10";
-"Range_Fair" = "10 ~ 15";
-"Range_SmallBlessing" = "15 ~ 30";
-"Range_MediumBlessing" = "30 ~ 50";
-"Range_BigBlessing" = "50 ~ 100";
-"Range_VeryGood" = "100 ~ 500";
-"Range_SuperGood" = "500 ~ 1000";
-"Range_Legendary" = "1000 ~ 5000";
-"Range_God" = "5000 ~ 10000";
-"Range_GodProMax" = "最终分数 ≥ 10000";
+"Range_VeryBad" = "final score < -49";
+"Range_ExtremelyBad" = "-50 ~ -9";
+"Range_Terrible" = "-10 ~ -1";
+"Range_Bad" = "0 ~ 2";
+"Range_SlightlyBad" = "3 ~ 4";
+"Range_Average" = "5 ~ 9";
+"Range_Fair" = "10 ~ 14";
+"Range_SmallBlessing" = "15 ~ 29";
+"Range_MediumBlessing" = "30 ~ 49";
+"Range_BigBlessing" = "50 ~ 99";
+"Range_VeryGood" = "100 ~ 499";
+"Range_SuperGood" = "500 ~ 999";
+"Range_Legendary" = "1000 ~ 4999";
+"Range_God" = "5000 ~ 9999";
+"Range_GodProMax" = "final score ≥ 10000";
