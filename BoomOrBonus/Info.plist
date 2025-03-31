@@ -2,6 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-9275380963550837~9068114885</string>
 	<key>SKAdNetworkItems</key>
@@ -174,10 +175,6 @@
 			<key>SKAdNetworkIdentifier</key>
 			<string>3qcr597p9d.skadnetwork</string>
 		</dict>
-	</array>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict/>
 	</array>
 </dict>
 </plist>

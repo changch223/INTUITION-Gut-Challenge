@@ -11,7 +11,7 @@
 "RemainingAttempts" = "Remaining Attempts:";
 "CurrentValue" = "Current Score:";
 "LevelsPassedPrefix" = "You’ve survived through";
-"LevelsPassedSuffix" = "levels. Keep going or cash out while you're ahead?";
+"LevelsPassedSuffix" = "levels. Keep going?";
 "GameOver" = "BOOM! Your luck just ran out!";
 "FinalValue" = "Final Score:";
 "LevelsPassed" = "Levels Cleared:";

@@ -109,7 +109,7 @@ struct ContentView: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 10)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.9)
+                    .minimumScaleFactor(0.7)
                 
                 
                 if !game.isGameOver {
