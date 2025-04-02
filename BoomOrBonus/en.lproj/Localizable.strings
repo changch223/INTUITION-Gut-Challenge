@@ -63,6 +63,11 @@
 "LevelsPassedRecord" = "Rounds:";
 "IntuitionRating" = "Intuition Rating:";
 
+"AdNotReadyTitle" = "Ad Not Ready";
+"AdNotReadyMessage" = "Please try again later.";
+
+
+
 /* Intuition Level */
 "IntuitionLevel_VeryBad" = "No intuition at all";
 "IntuitionLevel_ExtremelyBad" = "Way off";

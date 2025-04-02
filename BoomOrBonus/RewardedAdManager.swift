@@ -12,7 +12,7 @@ class RewardedAdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     static let shared = RewardedAdManager()
     
     private var rewardedAd: RewardedAd?
-    private var adUnitID = "ca-app-pub-9275380963550837/5616789182" 
+    private var adUnitID = "ca-app-pub-9275380963550837/5616789182"
     private var rewardAction: (() -> Void)?
 
     override private init() {
@@ -20,11 +20,15 @@ class RewardedAdManager: NSObject, ObservableObject, FullScreenContentDelegate {
         loadRewardedAd()
     }
 
+    var isAdReady: Bool {
+           return rewardedAd != nil
+       }
+    
     func loadRewardedAd() {
-        guard rewardedAd == nil else {
-            print("⏳ Reward ad 已載入，略過重複加載")
-            return
-        }
+        //guard rewardedAd == nil else {
+        //    print("⏳ Reward ad 已載入，略過重複加載")
+        //    return
+        //}
 
         RewardedAd.load(with: adUnitID, request: Request()) { ad, error in
             if let error = error {

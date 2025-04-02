@@ -250,12 +250,23 @@ struct ContentView: View {
                 Button("ExtraAttempts") {
                     AudioManager.shared.playSound("Click")
                     HapticManager.shared.playClick()
-                    if let rootVC = UIApplication.rootViewController {
+
+                    if RewardedAdManager.shared.isAdReady {
+                        if let rootVC = UIApplication.rootViewController {
                             RewardedAdManager.shared.showAd(from: rootVC) {
                                 maxAttempts += 3
                             }
+                        } else {
+                            print("❗找不到 rootViewController")
+                        }
                     } else {
-                        print("❗找不到 rootViewController")
+                        if let rootVC = UIApplication.rootViewController {
+                            let alert = UIAlertController(title: NSLocalizedString("AdNotReadyTitle", comment: ""),
+                                                          message: NSLocalizedString("AdNotReadyMessage", comment: ""),
+                                                          preferredStyle: .alert)
+                            alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
+                            rootVC.present(alert, animated: true)
+                        }
                     }
                 }
                 .buttonStyle(GameButtonStyle(backgroundColor: .pink))
@@ -265,8 +276,8 @@ struct ContentView: View {
                     .font(.headline)
                     .padding(.bottom, 10)
                 
-                //BannerAdView(adUnitID: "ca-app-pub-9275380963550837/2702683361")
-                //    .frame(height: 50)
+                BannerAdView(adUnitID: "ca-app-pub-9275380963550837/2702683361")
+                    .frame(height: 50)
                 
             }
         }
@@ -283,7 +294,7 @@ struct ContentView: View {
                 AudioManager.shared.playSound("start")
 
                 // ✅ 提前載入 Reward 廣告
-                RewardedAdManager.shared.loadRewardedAd()
+                //RewardedAdManager.shared.loadRewardedAd()
         }
         .sheet(isPresented: $showProbabilities) {
             ProbabilityView()

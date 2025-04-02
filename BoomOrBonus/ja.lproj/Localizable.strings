@@ -63,6 +63,10 @@
 "LevelsPassedRecord" = "突破ステージ：";
 "IntuitionRating" = "直感の評価：";
 
+"AdNotReadyTitle" = "広告の準備ができていません";
+"AdNotReadyMessage" = "しばらくしてからもう一度お試しください。";
+
+
 /* Intuition Level */
 "IntuitionLevel_VeryBad" = "全然直感なし";
 "IntuitionLevel_ExtremelyBad" = "直感が完全に外れ";

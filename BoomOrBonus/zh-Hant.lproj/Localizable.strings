@@ -76,6 +76,12 @@
 "LevelsPassedRecord" = "闖關：";
 "IntuitionRating" = "運氣評分：";
 
+//ads
+"AdNotReadyTitle" = "廣告尚未準備好";
+"AdNotReadyMessage" = "請稍後再嘗試。";
+
+
+
 /* Intuition Level（使用於評分與標準） */
 "IntuitionLevel_VeryBad" = "毫無直覺";
 "IntuitionLevel_ExtremelyBad" = "直覺大走鐘";

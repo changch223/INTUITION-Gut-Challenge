@@ -62,6 +62,13 @@
 "LevelsPassedRecord" = "闯关：";
 "IntuitionRating" = "直觉评分：";
 
+
+//ads
+"AdNotReadyTitle" = "广告尚未准备好";
+"AdNotReadyMessage" = "请稍后再尝试。";
+
+
+
 /* Intuition Level */
 "IntuitionLevel_VeryBad" = "毫无直觉";
 "IntuitionLevel_ExtremelyBad" = "直觉跑偏了";
