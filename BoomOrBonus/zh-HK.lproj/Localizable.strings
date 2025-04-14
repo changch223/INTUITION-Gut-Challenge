@@ -55,7 +55,7 @@
 "ProbabilityInfo" = "機率資訊";
 "GameRecords" = "遊玩記錄";
 "RatingStandards" = "評分標準";
-"ExtraAttempts" = "獲得額外3次機會";
+"ExtraAttempts" = "獲得額外30次機會";
 "AttemptsLimitReached" = "今天遊玩次數已達上限！";
 "OK" = "好";
 "Close" = "關閉";
@@ -84,7 +84,7 @@
 "IntuitionLevel_VeryBad" = "毫無直覺";
 "IntuitionLevel_ExtremelyBad" = "直覺大走鐘";
 "IntuitionLevel_Terrible" = "倒楣透頂";
-"IntuitionLevel_Bad" = "感直覺迷路了";
+"IntuitionLevel_Bad" = "直覺迷路了";
 "IntuitionLevel_SlightlyBad" = "感覺不太靈";
 "IntuitionLevel_Average" = "普通水準";
 "IntuitionLevel_Fair" = "小有靈感";

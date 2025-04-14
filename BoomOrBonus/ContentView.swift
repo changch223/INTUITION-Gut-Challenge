@@ -19,7 +19,7 @@ struct ContentView: View {
     
     @AppStorage("dailyAttempts") var dailyAttempts = 0
     @AppStorage("lastResetDate") var lastResetDate: String = ""
-    @AppStorage("maxAttempts") var maxAttempts = 5
+    @AppStorage("maxAttempts") var maxAttempts = 30
     
     @State private var showAlert = false
     @State private var showProbabilities = false
@@ -254,7 +254,7 @@ struct ContentView: View {
                     if RewardedAdManager.shared.isAdReady {
                         if let rootVC = UIApplication.rootViewController {
                             RewardedAdManager.shared.showAd(from: rootVC) {
-                                maxAttempts += 3
+                                maxAttempts += 30
                             }
                         } else {
                             print("❗找不到 rootViewController")
@@ -288,7 +288,7 @@ struct ContentView: View {
             let currentDateString = Date().formatted(.dateTime.year().month().day())
                 if lastResetDate != currentDateString {
                     dailyAttempts = 0
-                    maxAttempts = 5
+                    maxAttempts = 30
                     lastResetDate = currentDateString
                 }
                 AudioManager.shared.playSound("start")

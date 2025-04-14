@@ -42,7 +42,7 @@
 "ProbabilityInfo" = "確率情報";
 "GameRecords" = "プレイ記録";
 "RatingStandards" = "評価基準";
-"ExtraAttempts" = "追加で3回のチャンスを獲得";
+"ExtraAttempts" = "追加で30回のチャンスを獲得";
 "AttemptsLimitReached" = "本日のプレイ回数は上限に達しました！";
 "OK" = "OK";
 "Close" = "閉じる";

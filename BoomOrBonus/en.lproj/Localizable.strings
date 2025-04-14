@@ -42,7 +42,7 @@
 "ProbabilityInfo" = "Probability Info";
 "GameRecords" = "Game Records";
 "RatingStandards" = "Ranking";
-"ExtraAttempts" = "Get 3 Extra Attempts";
+"ExtraAttempts" = "Get 30 Extra Attempts";
 "AttemptsLimitReached" = "You've used all your attempts today!";
 "OK" = "OK";
 "Close" = "Close";
