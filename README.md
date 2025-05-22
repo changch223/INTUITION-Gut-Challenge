@@ -2,7 +2,7 @@
 
 Welcome to the official GitHub repository for **INTUITION++ Gut Challenge** – a thrilling 50/50 intuition game now available on the [App Store](https://apps.apple.com/us/app/intuition-gut-challenge/id6744003417)!
 
-🧠 **How sharp is your intuition today?**  
+**How sharp is your intuition today?**  
 Test your gut with this quick, fun, and addictive game that puts your decision-making skills to the ultimate test!
 
 ## Download Now
