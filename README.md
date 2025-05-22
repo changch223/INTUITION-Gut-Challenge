@@ -5,7 +5,7 @@ Welcome to the official GitHub repository for **INTUITION++ Gut Challenge** – 
 🧠 **How sharp is your intuition today?**  
 Test your gut with this quick, fun, and addictive game that puts your decision-making skills to the ultimate test!
 
-## 📱 Download Now
+## Download Now
 
 ▶️ [INTUITION++ on App Store](https://apps.apple.com/us/app/intuition-gut-challenge/id6744003417)
 
@@ -25,13 +25,13 @@ No fortune-telling, no complex rules—**just trust your gut**.
 
 ## 🌟 Key Features
 
-- 🔓 **Free to play** — Enjoy daily challenges without any cost.
-- 📊 **Track your intuition growth** — Your performance is automatically saved.
-- 🧠 **Daily training** — Play twice a day to improve your instincts.
-- 💬 **Encouraging feedback** — Built-in motivational messages on failure.
-- 🔥 **20-tier AI luck rating system** — AI evaluates your fortune after each game.
-- 🎁 **Watch ads to get extra chances** — Want another shot? Just watch a quick ad.
-- 🎶 **Sound & animation effects** — Makes every choice feel impactful and fun!
+- **Free to play** — Enjoy daily challenges without any cost.
+- **Track your intuition growth** — Your performance is automatically saved.
+- **Daily training** — Play twice a day to improve your instincts.
+- **Encouraging feedback** — Built-in motivational messages on failure.
+- **20-tier AI luck rating system** — AI evaluates your fortune after each game.
+- **Watch ads to get extra chances** — Want another shot? Just watch a quick ad.
+- **Sound & animation effects** — Makes every choice feel impactful and fun!
 
 ---
 
@@ -46,15 +46,15 @@ No fortune-telling, no complex rules—**just trust your gut**.
 
 ## 🚧 Roadmap & Future Plans
 
-- ✨ Enhanced stage animations
-- 🧠 More AI-generated luck messages
-- 🤖 Android version is in the works!
+- Enhanced stage animations
+- More AI-generated luck messages
+- Android version is in the works!
 
 ---
 
 ## 🔗 Related Links
 
-- 🌐 [App Website & Blog (Japanese)](https://appfreelife.com/?p=24)
+- [App Website & Blog (Japanese)](https://appfreelife.com/?p=24)
 
 ---
 
@@ -64,5 +64,5 @@ This app is my third mobile game, inspired by a childhood idea to create a game 
 
 ---
 
-📥 **Download Now and Test Your Intuition!**  
-▶️ [App Store: INTUITION++ Gut Challenge](https://apps.apple.com/us/app/intuition-gut-challenge/id6744003417)
+**Download Now and Test Your Intuition!**  
+▶[App Store: INTUITION++ Gut Challenge](https://apps.apple.com/us/app/intuition-gut-challenge/id6744003417)
