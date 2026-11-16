@@ -1,0 +1,807 @@
+<title>INTUITION++ 第五版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：左欄是論述、右欄是黏住的可玩手機；窄螢幕時手機排在論點之後。手機內是固定的鈷藍夜色，頁面跟隨明暗主題。 */
+:root{
+  --bg:#F2F3FA;--surface:#FFFFFF;--ink:#12152B;--mute:#586080;--line:#D8DBEC;
+  --accent:#2B3FE0;--boom:#D92B48;--bonus:#B87600;--safe:#0B8F6B;
+  --display:"Bricolage Grotesque","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B0D1E;--surface:#141731;--ink:#ECEEFB;--mute:#9CA2C6;--line:#272B4D;
+  --accent:#96A3FF;--boom:#FF6B84;--bonus:#FFB938;--safe:#3FDDB0;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B0D1E;--surface:#141731;--ink:#ECEEFB;--mute:#9CA2C6;--line:#272B4D;
+  --accent:#96A3FF;--boom:#FF6B84;--bonus:#FFB938;--safe:#3FDDB0;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.75 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1140px;margin:0 auto;padding-block:40px 96px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;align-items:start}
+.doc{min-width:0;display:flex;flex-direction:column;gap:64px}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:12px;align-items:center}
+@media (max-width:900px){.lay{grid-template-columns:minmax(0,1fr);gap:40px}.side{position:static;order:2}.doc{display:contents}.hero{order:1}.doc>section{order:3}.lay{row-gap:56px}}
+.eyebrow{font:600 13px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font:800 clamp(34px,5.4vw,58px)/1.12 var(--display);letter-spacing:-.02em;margin:14px 0 18px;text-wrap:balance}
+h2{font:800 clamp(24px,3vw,32px)/1.25 var(--display);letter-spacing:-.01em;margin:8px 0 14px;text-wrap:balance}
+h3{font:700 17px/1.4 var(--body);margin:0 0 4px}
+p{margin:0 0 14px;max-width:38em}
+.lede{font-size:18px;color:var(--mute)}
+section{display:flex;flex-direction:column}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 28px;margin:10px 0 0;padding:0;list-style:none}
+.how li{border-top:2px solid var(--ink);padding-top:10px;font-size:14.5px;line-height:1.6;color:var(--mute)}
+.how b{display:block;color:var(--ink);font-size:15.5px}
+.tbl{overflow-x:auto;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.55}
+th,td{text-align:left;padding:11px 14px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12.5px/1.3 var(--body);letter-spacing:.06em;color:var(--mute);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-right:0;padding-left:14px}
+td b{font-weight:700}
+.was{color:var(--mute)}
+.hi{color:var(--accent);font-weight:700}
+.note{font-size:13.5px;color:var(--mute);margin-top:12px;max-width:44em}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 6px;padding:0;list-style:none;counter-reset:f}
+.flow li{counter-increment:f;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;font-size:14px;line-height:1.55;color:var(--mute)}
+.flow li::before{content:counter(f);font:800 22px/1 var(--display);color:var(--accent);display:block;margin-bottom:8px}
+.flow b{color:var(--ink);display:block;font-size:15px}
+.anat{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:28px;align-items:center;margin:10px 0}
+@media (max-width:620px){.anat{grid-template-columns:minmax(0,1fr)}}
+.anat ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14.5px;line-height:1.6;color:var(--mute)}
+.anat li b{color:var(--ink)}
+.demo{background:linear-gradient(160deg,#2334D6,#0E1470);border-radius:22px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.demo .cd{height:190px;cursor:default}
+.plan{display:flex;flex-direction:column;margin-top:6px}
+.plan>div{display:grid;grid-template-columns:86px minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--line)}
+.plan .ph-n{font:800 15px/1.5 var(--display);color:var(--accent)}
+.plan p{margin:0;font-size:14.5px;line-height:1.65;color:var(--mute);max-width:none}
+.plan .ok{color:var(--ink);font-size:13.5px;margin-top:6px}
+.modes{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.modes button{font:500 14px/1 var(--body);border:0;background:none;color:var(--mute);padding:10px 18px;border-radius:999px;cursor:pointer}
+.modes button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.keys{font-size:12.5px;color:var(--mute);text-align:center;line-height:1.6}
+kbd{font:600 11px/1 var(--display);border:1px solid var(--line);border-radius:5px;padding:2px 5px;background:var(--surface);color:var(--ink)}
+button:focus-visible{outline:3px solid #FFB21E;outline-offset:2px}
+
+/* ───── 手機原型（單一外觀，所有顏色寫死） ───── */
+.ph{position:relative;width:min(100%,372px);height:800px;border-radius:44px;overflow:hidden;background:linear-gradient(165deg,#2638DC 0%,#131C96 55%,#0B1060 100%);color:#FFFCF2;box-shadow:0 0 0 9px #05071C,0 30px 60px -20px rgba(8,12,60,.55);display:flex;flex-direction:column;padding:18px 16px 16px;gap:10px;font-family:var(--body);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.ph button{font-family:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ph.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6}
+.top{display:flex;align-items:center;gap:6px;height:34px}
+.chip{font:600 12.5px/1 var(--body);background:rgba(255,255,255,.14);border-radius:999px;padding:8px 11px;white-space:nowrap}
+.chip.coin{background:#FFB21E;color:#1B1300;font-family:var(--display);font-weight:800;font-size:14px;padding:7px 11px}
+.chip.day{background:none;border:1px solid rgba(255,255,255,.3);font-weight:500;font-family:var(--body);cursor:pointer}
+.sp{flex:1}
+.ib{width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.14);font:700 15px/1 var(--display);display:grid;place-items:center}
+.boss{background:#FF3B5C;color:#fff;border-radius:10px;font-size:12.5px;line-height:1.4;padding:7px 11px;font-weight:500}
+.boss b{font-weight:700;margin-right:6px}
+.boss.mod{background:rgba(255,255,255,.16);color:#FFFCF2}
+.boss.mod b{color:#FFB21E}
+.cd.fogc{background:repeating-linear-gradient(135deg,#C9CEE8 0 10px,#D8DCF0 10px 20px)}
+.cd.fogc .n{font-size:64px;opacity:.55}
+.score{text-align:center;padding-top:2px}
+.val{font:800 84px/1 var(--display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;height:86px;display:flex;align-items:center;justify-content:center}
+.goal{font-size:13.5px;color:#C6CCFF;margin:2px 0 9px;min-height:22px}
+.goal b{color:#FFFCF2;font-family:var(--display);font-size:16px}
+.bar{position:relative;height:10px;border-radius:5px;background:rgba(255,255,255,.16)}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#16D6A3;width:0;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.bar i.dbl{background:#FFB21E}
+.bar b{position:absolute;left:66.667%;top:-4px;bottom:-4px;width:2px;background:#FFFCF2;border-radius:1px}
+.meta{display:flex;align-items:center;justify-content:space-between;height:24px}
+.pips{display:flex;gap:5px;align-items:center}
+.pips span{font-size:12px;color:#C6CCFF;margin-right:4px}
+.pips i{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.18)}
+.pips i.on{background:#FFFCF2}
+.stk{font:800 13px/1 var(--display);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);color:#C6CCFF}
+.stk.hot{background:#FFB21E;color:#1B1300}
+.bls{display:flex;gap:5px;flex-wrap:wrap;min-height:22px;align-content:flex-start}
+.bls span{font-size:11.5px;line-height:1;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:5px 7px;color:#E2E5FF}
+.bls em{font-style:normal;font-size:11.5px;color:#9AA3F0;padding:5px 0}
+.cards{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:0}
+.cd{position:relative;border:0;border-radius:22px;background:#FFFCF2;color:#10133A !important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 8px 14px;overflow:hidden;transition:transform .16s,opacity .2s;font-family:var(--body);--dc:#0FA57C}
+.cd.mul{background:#10133A;color:#FFFCF2 !important}
+.cd.mul .n{color:#FFB21E}
+.cd.d2{--dc:#D99A00}.cd.d3{--dc:#F06A1D}.cd.d4{--dc:#F0284B}.cd.d0{--dc:#8088B8}
+.ph .cd:active{transform:scale(.97)}
+.cd .k{font-size:12px;font-weight:500;opacity:.6;letter-spacing:.1em}
+.cd .n{font:800 60px/1 var(--display);letter-spacing:-.03em}
+.cd .to{font-size:12.5px;opacity:.7;font-variant-numeric:tabular-nums;margin-bottom:10px}
+.fuse{display:flex;gap:4px}
+.fuse i{width:22px;height:8px;border-radius:4px;background:rgba(128,136,184,.28)}
+.fuse i.on{background:var(--dc)}
+.cd .dl{font:700 12.5px/1 var(--body);color:var(--dc);margin-top:5px}
+.cd .pk{position:absolute;top:10px;left:50%;transform:translateX(-50%);font:700 12px/1 var(--body);padding:6px 10px;border-radius:999px;color:#fff;white-space:nowrap}
+.pk.ok{background:#0FA57C}.pk.bad{background:#F0284B}
+.cd .res{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 34px/1.1 var(--display);opacity:0;text-align:center;padding:8px}
+.cd.arm{transform:scale(1.04)}
+.cd.arm .fuse i.on{animation:blink .11s infinite alternate}
+@keyframes blink{to{opacity:.25}}
+.cd.dim{opacity:.35;transform:scale(.96)}
+.cd.safe,.cd.boom,.cd.saved{animation:pop .3s}
+.cd.safe{background:#16D6A3}.cd.boom{background:#FF3B5C}.cd.saved{background:#C9D1FF}
+.cd.safe>:not(.res),.cd.boom>:not(.res),.cd.saved>:not(.res){visibility:hidden}
+.cd.safe .res,.cd.boom .res,.cd.saved .res{opacity:1}
+.cd.safe .res,.cd.saved .res{color:#062A20}.cd.boom .res{color:#fff}
+.cd.saved .res{font-size:22px;font-family:var(--body);font-weight:700;color:#10133A}
+@keyframes pop{0%{transform:scale(1.04)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+.cd.in{animation:dealin .26s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes dealin{from{transform:translateY(26px) scale(.94);opacity:0}}
+.items{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.it{border:0;border-radius:12px;background:rgba(255,255,255,.12);padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;line-height:1}
+.it b{font:800 17px/1 var(--display)}
+.it[disabled]{opacity:.38;cursor:default}
+.it.on{background:#FFB21E;color:#1B1300}
+.it.pas{background:none;border:1px dashed rgba(255,255,255,.35);cursor:default}
+.bank{border:0;border-radius:16px;height:54px;background:#FFB21E;color:#1B1300 !important;font:700 16px/1 var(--body)}
+.bank[disabled]{background:rgba(255,255,255,.1);color:#9AA3F0 !important;font-weight:500;font-size:14px;cursor:default}
+.bank:not([disabled]){animation:glow 1.1s infinite alternate}
+@keyframes glow{to{box-shadow:0 0 0 5px rgba(255,178,30,.3)}}
+.toast{position:absolute;left:50%;top:48px;transform:translate(-50%,-10px);background:#05071C;color:#FFFCF2;font-size:13px;line-height:1.4;padding:9px 14px;border-radius:999px;opacity:0;transition:.22s;pointer-events:none;z-index:7;max-width:88%;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.scrim{position:absolute;inset:0;background:rgba(5,7,28,.62);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s;z-index:8}
+.scrim.on{opacity:1;visibility:visible;transition:opacity .25s}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:94%;overflow-y:auto;background:#FFFCF2;color:#10133A;border-radius:28px 28px 0 0;padding:22px 18px 20px;transform:translateY(102%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.9,.25,1),visibility 0s .32s;z-index:9;display:flex;flex-direction:column;gap:12px}
+.sheet.on{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.2,.9,.25,1)}
+.sheet h4{font:800 30px/1.15 var(--display);margin:0;letter-spacing:-.01em}
+.sheet h4 small{display:block;font:500 13px/1.4 var(--body);color:#5A6088;letter-spacing:0;margin-bottom:4px}
+.sheet p{margin:0;font-size:13.5px;line-height:1.6;color:#454B74;max-width:none}
+.sheet .lab{font:700 12px/1 var(--body);letter-spacing:.08em;color:#5A6088;margin-top:4px}
+.nx{background:#E9EBFF;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;color:#10133A}
+.nx.bs{background:#FFE1E6}
+.of{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-align:left;border:1.5px solid #10133A;border-radius:14px;background:#fff;color:#10133A !important;padding:10px 12px;align-items:center}
+.of b{font-size:15px}.of span{grid-column:1;font-size:12.5px;line-height:1.45;color:#454B74}
+.of em{grid-column:2;grid-row:1/3;font:800 17px/1 var(--display);font-style:normal;background:#FFB21E;border-radius:999px;padding:8px 11px}
+.of[disabled],.si[disabled]{opacity:.4;cursor:default}
+.of.got{border-style:dashed}
+.sis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.si{border:1.5px solid #10133A;border-radius:12px;background:#fff;color:#10133A !important;padding:8px 2px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;align-items:center}
+.si b{font:800 14px/1.2 var(--display)}
+.si i{font-style:normal;color:#5A6088;font-size:11px}
+.row{display:flex;gap:8px;margin-top:4px}
+.btn{flex:1;border:0;border-radius:14px;height:50px;font:700 15px/1.2 var(--body);background:#E3E5F5;color:#10133A !important}
+.btn.pri{background:#2638DC;color:#fff !important;flex:2}
+.btn.sm{flex:0 0 auto;padding:0 14px}
+.btn[disabled]{opacity:.4;cursor:default}
+.marks{display:flex;gap:6px}
+.marks i{flex:1;height:30px;border-radius:8px;background:#E3E5F5;display:grid;place-items:center;font:800 12px/1 var(--display);font-style:normal;color:#10133A}
+.marks i.m1{background:#16D6A3}.marks i.m2{background:#FFB21E}.marks i.m0{background:#FF3B5C;color:#fff}
+.shr{font:500 13px/1.6 var(--body);background:#F0F1FA;border-radius:12px;padding:10px 12px;margin:0;white-space:pre-wrap;user-select:text;-webkit-user-select:text}
+.big{font:800 54px/1 var(--display);letter-spacing:-.02em}
+.sheet table{font-size:12.5px}.sheet th,.sheet td{padding:6px 8px 6px 0;border-color:#DDDFEE}.sheet th{color:#5A6088}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist div{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12.5px}
+.hist .marks i{height:14px;border-radius:4px}
+.ad{position:absolute;inset:0;background:#05071C;z-index:12;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#C6CCFF;font-size:14px}
+.ad div{width:60%;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
+.ad i{display:block;height:100%;width:0;background:#FFB21E}
+.ad.run i{width:100%;transition:width 2.4s linear}
+.barl{position:relative;height:16px;margin-top:6px;font-size:11.5px;line-height:16px;color:#C6CCFF}
+.barl span{position:absolute;top:0;white-space:nowrap}
+.barl .t{right:calc(33.333% + 6px)}
+.barl .x{right:0}
+.barl b{color:#FFFCF2;font-weight:700}
+.barl .x.on,.barl .x.on b{color:#FFB21E}
+.it small{font-size:10.5px;opacity:.72;line-height:1;font-weight:500}
+.it.pas.none{opacity:.4}
+.bank{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:60px;padding:0 10px}
+.bank small{font-size:11.5px;font-weight:500;opacity:.78;line-height:1.2}
+.cd .res small{display:block;font:500 13px/1.3 var(--body);margin-top:6px}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;background:#F0F1FA;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4}
+.calc b{text-align:right;font-family:var(--display)}
+.calc .sum{border-top:1px solid #DDDFEE;padding-top:6px;font-weight:700}
+.coach{position:absolute;inset:0;z-index:11}
+.coach .hole{position:absolute;border-radius:18px;box-shadow:0 0 0 1400px rgba(5,7,28,.8);outline:2px solid #FFB21E;outline-offset:2px;transition:all .32s cubic-bezier(.2,.9,.25,1);pointer-events:none}
+.coach .tip{position:absolute;left:14px;right:14px;background:#FFFCF2;color:#10133A;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 14px 30px -10px rgba(0,0,0,.5)}
+.coach h5{font:800 19px/1.3 var(--display);margin:0}
+.coach p{font-size:13.5px;line-height:1.65;margin:0;color:#454B74;max-width:none}
+.coach .cr{display:flex;align-items:center;gap:8px}
+.coach .cr span{font:700 12px/1 var(--display);color:#5A6088;flex:1;letter-spacing:.06em}
+.coach .btn{flex:0 0 auto;height:40px;padding:0 16px;font-size:14px}
+.dtabs{display:flex;gap:3px;background:#E9EBFF;border-radius:999px;padding:3px}
+.dtabs button{flex:1;border:0;background:none;border-radius:999px;padding:8px 0;font:600 12.5px/1 var(--body);color:#454B74 !important}
+.dtabs button[aria-selected="true"]{background:#10133A;color:#FFFCF2 !important}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:#F0F1FA;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile span{font-size:11.5px;color:#5A6088;line-height:1.2}
+.tile b{font:800 23px/1.1 var(--display);font-variant-numeric:tabular-nums;color:#10133A}
+.tile i{font-style:normal;font-size:11px;color:#5A6088;line-height:1.2}
+.recs{display:flex;flex-direction:column}
+.rc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:9px 0;border-bottom:1px solid #DDDFEE;align-items:baseline}
+.rc span{font-size:13px}
+.rc b{font:800 16px/1 var(--display);font-variant-numeric:tabular-nums;text-align:right}
+.rc small{grid-column:1/3;display:flex;align-items:center;gap:8px;font-size:11px;color:#5A6088;white-space:nowrap}
+.rc small i{flex:1;height:6px;border-radius:3px;background:#E3E5F5;position:relative;overflow:hidden}
+.rc small i::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--w);background:#2638DC;border-radius:3px}
+.rc.new span{color:#9A6200;font-weight:700}.rc.new b{color:#9A6200}.rc.new small i::after{background:#FFB21E}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal div{aspect-ratio:1;max-width:100%;border-radius:8px;background:#F0F1FA;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:9.5px;color:#5A6088;line-height:1}
+.cal div b{font:800 13px/1 var(--display);color:#10133A}
+.cal .w{background:#16D6A3;color:#062A20}.cal .w b{color:#062A20}
+.cal .l{background:#fff;box-shadow:inset 0 0 0 1.5px #FF3B5C}.cal .l b{color:#C21F3F}
+.cal .t{outline:2px solid #10133A;outline-offset:1px}
+.tries{display:flex;align-items:flex-end;gap:6px;height:92px;border-bottom:1px solid #C9CDE6;padding:0 2px}
+.tries div{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;font-size:10.5px;color:#454B74}
+.tries i{width:100%;max-width:28px;background:#2638DC;border-radius:4px 4px 0 0}
+.tries i.w{background:#0FA57C}
+.trl{display:flex;gap:6px;padding:4px 2px 0}.trl span{flex:1;min-width:0;text-align:center;font-size:10px;color:#5A6088;white-space:nowrap}
+.ex{font:700 11px/1 var(--body);background:#FFB21E;color:#1B1300;border-radius:6px;padding:5px 8px;align-self:flex-start}
+.recpop{position:absolute;left:50%;top:150px;transform:translate(-50%,-6px) scale(.96);background:#FFB21E;color:#1B1300;font:700 13px/1.3 var(--body);padding:8px 14px;border-radius:999px;opacity:0;transition:.22s;pointer-events:none;z-index:7;white-space:nowrap;box-shadow:0 8px 20px -8px rgba(0,0,0,.5)}
+.recpop.on{opacity:1;transform:translate(-50%,0) scale(1)}
+@media (prefers-reduced-motion:reduce){.ph *,.ph{animation:none !important;transition:none !important}}
+</style>
+
+<div class="wrap">
+<div class="lay">
+<div class="doc">
+
+  <header class="hero">
+    <div class="eyebrow">INTUITION++ · 第五版提案</div>
+    <h1>讓每一次點擊，都是一個真的決定</h1>
+    <p class="lede">重新檢查前四版之後，我發現最大的問題一直沒被解決：兩張牌爆炸的機率一樣，所以選數字比較好的那張永遠是對的。玩家以為自己在判斷，其實只是在擲硬幣。</p>
+    <p class="lede">這一版把核心換掉。每張牌有自己的危險度，安全的牌分數少，危險的牌分數多。旁邊的手機是完整可玩的版本，六關一局，大約五分鐘。</p>
+    <ul class="how">
+      <li><b>看危險度選牌</b>每張牌下方有 1 到 4 格引信。格數越多越容易爆，獎勵也越大。</li>
+      <li><b>手數有限</b>每關 7 手內要把分數打到目標，爆了只扣一手，不會直接結束；有保命符時連一手都不扣。</li>
+      <li><b>連中會加倍</b>每連中一次，下一張牌的得分多 25%，最高兩倍。連中會帶到下一關，爆一次就歸零。</li>
+      <li><b>達標後自己決定</b>可以馬上過關，把剩下的手數換成金幣；也可以拚到超標線（目標的 1.5 倍）多拿 $3。</li>
+      <li><b>破關之後</b>可以繼續打無盡關卡，也會解鎖下一個難度，一共六級。</li>
+    </ul>
+  </header>
+
+  <section>
+    <div class="eyebrow">重新審視</div>
+    <h2>前四版留下的五個問題</h2>
+    <p>前幾輪一直在往上加東西：道具、祝福、冒險模式。這次先回頭看底層，問題比功能多寡更根本。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>問題</th><th>為什麼嚴重</th><th>這一版的做法</th></tr></thead>
+      <tbody>
+        <tr><td><b>選牌沒有決策</b></td><td class="was">兩張牌一定有一張是炸彈，機率各半。牌面數字只影響賺多少，所以永遠選大的就好。</td><td>每張牌獨立計算會不會爆，危險度直接畫在牌上。安全與高報酬要自己取捨。</td></tr>
+        <tr><td><b>兩個模式兩套規則</b></td><td class="was">今日運試踩到就結束，冒險模式踩到只扣一手。同一個畫面要學兩次。</td><td>只留一套規則。今日挑戰和自由練習玩法完全相同，只差發牌的種子。</td></tr>
+        <tr><td><b>每天的成績不能比</b></td><td class="was">每個人拿到的牌不同，分享分數沒有意義，也就沒有每天回來的理由。</td><td>今日挑戰用日期當種子。同一天所有人在第幾關第幾手看到的牌都一樣。</td></tr>
+        <tr><td><b>連續猜對沒有回報</b></td><td class="was">第一次猜對和第五次猜對的價值相同，沒有越玩越緊張的感覺。</td><td>加入連中倍率。連中越多越捨不得冒險，剛好和高危險牌形成拉扯。</td></tr>
+        <tr><td><b>中途離開就消失</b></td><td class="was">手機遊戲常被打斷。前一版切換模式或關掉頁面，整局就沒了。</td><td>每一手之後自動存檔，回來時接著玩。</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">新的核心</div>
+    <h2>危險度寫在牌上，判斷交給玩家</h2>
+    <div class="anat">
+      <div class="demo" aria-hidden="true">
+        <div class="cd d1"><span class="k">加分</span><span class="n">+3</span><span class="to">成功 → 15</span><span class="fuse"><i class="on"></i><i></i><i></i><i></i></span><span class="dl">危險 1 · 10%</span></div>
+        <div class="cd mul d3"><span class="k">倍數</span><span class="n">×2</span><span class="to">成功 → 24</span><span class="fuse"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="dl">危險 3 · 42%</span></div>
+      </div>
+      <ul>
+        <li><b>大數字是獎勵。</b>淺色牌是加分，深色牌是倍數。倍數牌只有在手上有分數時才值錢。</li>
+        <li><b>「成功 →」是算好的結果。</b>連中倍率和雙倍道具都已經算進去，玩家不用心算。</li>
+        <li><b>引信格數是危險度。</b>顏色從綠到紅，旁邊直接寫出爆炸機率。兩張牌的危險度一定不同。</li>
+      </ul>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>危險度</th><th class="n">爆炸機率</th><th class="n">第 1 關加分牌</th><th class="n">倍數牌</th><th class="n">加分牌期望值</th></tr></thead>
+      <tbody>
+        <tr><td>1 格</td><td class="n">10%</td><td class="n">+2 到 +4</td><td class="n">不出現</td><td class="n">2.7</td></tr>
+        <tr><td>2 格</td><td class="n">25%</td><td class="n">+4 到 +7</td><td class="n">×1.5</td><td class="n">3.8</td></tr>
+        <tr><td>3 格</td><td class="n">42%</td><td class="n">+5 到 +9</td><td class="n">×2</td><td class="n">4.1</td></tr>
+        <tr><td>4 格</td><td class="n">60%</td><td class="n">+8 到 +14</td><td class="n">×3</td><td class="n">4.0</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">期望值刻意做得接近。這樣沒有哪一格永遠最好，決定因素變成當下的處境：連中倍率高時安全牌更划算，只剩一手又差很多分時只能賭高危險牌，分數已經很高時一張倍數牌勝過任何加分牌。每張牌的獎勵另有上下三成的浮動，所以偶爾會出現特別划算的牌。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">一局的結構</div>
+    <h2>六關、三個魔王，破關後還有更多</h2>
+    <ol class="flow">
+      <li><b>選牌</b>每關 7 手，每手二選一。</li>
+      <li><b>達標</b>分數到目標後，過關鈕亮起。</li>
+      <li><b>收手或加碼</b>剩下每一手換 $1，超標再加 $3。</li>
+      <li><b>商店</b>買祝福和道具，組出這一局的打法。</li>
+      <li><b>魔王</b>第 2、4、6 關是魔王關，其他關各抽一條特殊規則。</li>
+      <li><b>破關之後</b>無盡關卡，或挑戰更高難度。</li>
+    </ol>
+    <p>目標分數是用模擬訂的。下表是三種選牌方式各跑 20,000 局的過關率，都不買東西、不用道具。最後一欄是看期望值選牌，並且在商店買得起就買。</p>
+    <div class="tbl"><table id="simT">
+      <thead><tr><th>關卡</th><th class="n">目標</th><th>魔王規則</th><th class="n">只選安全</th><th class="n">只選危險</th><th class="n">看期望值</th><th class="n">期望值＋商店</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note" id="simN"></p>
+  </section>
+
+  <section>
+    <div class="eyebrow">說明與導覽</div>
+    <h2>規則寫在用得到的地方，不藏在說明頁裡</h2>
+    <p>第一次打開時有六步導覽，每一步只圈出一個區塊、講一件事，可以隨時跳過，也能從右上角的「?」再看一次。導覽結束之後，玩家需要的資訊都直接寫在操作的位置。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>位置</th><th>畫面上寫了什麼</th><th>回答的問題</th></tr></thead>
+      <tbody>
+        <tr><td><b>進度條</b></td><td>下方標出過關分數和超標分數，超標旁邊寫著「+$3」。</td><td class="was">還差多少？拚上去有什麼好處？</td></tr>
+        <tr><td><b>過關按鈕</b></td><td>達標前寫金幣公式。達標後寫這次能拿多少錢，以及每一項怎麼來的，例如「基本 $3 + 剩 4 手 $4　·　到 24 再 +$3」。</td><td class="was">現在過關划不划算？</td></tr>
+        <tr><td><b>保命符</b></td><td>底下寫「自動擋爆」，點一下看完整說明。擋下爆炸時，牌上寫「不扣手數」，上方提示剩幾張。</td><td class="was">它什麼時候生效？要不要自己按？</td></tr>
+        <tr><td><b>其他道具</b></td><td>每個道具底下一行寫效果：看會不會爆、換一組牌、得分 ×2。</td><td class="was">這顆按鈕做什麼？</td></tr>
+        <tr><td><b>爆炸時</b></td><td>牌上寫「扣 1 手」，提示寫出連中歸零、魔王關的分數減半。</td><td class="was">我剛剛損失了什麼？</td></tr>
+        <tr><td><b>商店</b></td><td>最上方列出剛拿到的金幣明細和合計。</td><td class="was">錢是怎麼來的？</td></tr>
+        <tr><td><b>結算</b></td><td>戰績格綠色是過關、金色是超標，並寫出這局超標了幾關。破關時告訴玩家解鎖了哪個難度，接著可以選無盡關卡、下一個難度，或去自由練習。</td><td class="was">下次要怎麼打得更好？</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">每一關都不一樣</div>
+    <h2>魔王之外，每關再抽一條特殊規則</h2>
+    <p>魔王改成每兩關一個：第 2 關濃霧、第 4 關不穩、第 6 關重壓。魔王關以外的每一關，都會從下面八條規則抽一條，寫在手機上方的橫條上，商店裡也會先預告下一關的規則。今日挑戰用日期決定抽到哪條，所有人一樣。</p>
+    <div class="tbl"><table id="modT">
+      <thead><tr><th>規則</th><th>效果</th><th>改變了什麼判斷</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p>魔王「濃霧」也重做了。原本只藏危險度，但加分牌的數字範圍幾乎不重疊，倍數又一對一對應危險度，看數字就猜得出來。現在被濃霧罩住的牌整張蓋住，分數、加分或倍數、危險度全部看不到，玩家要在「看得見的牌」和「蓋住的牌」之間選。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">今日挑戰</div>
+    <h2>每天一副牌，記住它，第二、三次破關</h2>
+    <p>今日挑戰每天換一副牌，所有人拿到的牌和規則都一樣，而且可以無限重打。同一副牌在同樣的位置會發同樣的兩張牌，哪張會爆也一樣，跟前面怎麼選無關。所以每打一次都會多知道幾張牌的結果，下一次就能走得更遠。</p>
+    <p>因為可以重打，今日挑戰的目標比「入門」高 30%。紀錄不再只看第一次，而是記「第幾次破關」，分享時也是寫這個，像每天的謎題一樣可以和朋友比。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>挑戰次數</th><th class="n">全部記得</th><th class="n">只記得一半</th></tr></thead>
+      <tbody>
+        <tr><td>第 1 次就破關</td><td class="n">7%</td><td class="n">7%</td></tr>
+        <tr><td>第 2 次以內</td><td class="n">33%</td><td class="n">19%</td></tr>
+        <tr><td>第 3 次以內</td><td class="n hi">58%</td><td class="n hi">33%</td></tr>
+        <tr><td>第 5 次以內</td><td class="n">73%</td><td class="n">55%</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">每種情況各模擬 3,000 天。模擬的玩家會記住自己翻過的牌是否爆炸，其他照期望值選牌、會買祝福，不用道具。「只記得一半」是每張翻過的牌只有一半機率記得。有些日子的牌真的很難，記得再多也破不了，所以累計破關率不會到 100%。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">我的紀錄</div>
+    <h2>每一個數字都是下一次的目標</h2>
+    <p>手機右上角的星號打開紀錄頁，分成四個分頁：總覽、今日挑戰、難度、祝福。每一項個人紀錄都有一串里程碑，紀錄下方的進度條顯示離下一個里程碑還差多少，所以就算今天沒破關，也有可以挑戰的東西。</p>
+    <div class="tbl"><table id="recT">
+      <thead><tr><th>紀錄</th><th>怎麼算</th><th>里程碑</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p>遊戲中打破紀錄時，畫面上方立刻跳出「★ 新紀錄」，同一項紀錄一局只跳一次。結算畫面會列出這局打破了哪幾項。第一局不會跳，因為還沒有紀錄可以打破。</p>
+    <p>「今日挑戰」分頁有四個數字：破關天數、連續破關天數、最少幾次破關、平均幾次破關。下面是今天每一次挑戰打到第幾關的柱狀圖，最後是最近 14 天的日曆，綠格寫第幾次破關，紅框寫挑戰了幾次還沒破。放棄重來也算一次挑戰，避免玩家用放棄來刷次數。</p>
+    <p>「難度」分頁列出每個難度的局數、破關數和最高總分。「祝福」分頁列出每個祝福帶過幾局、破關率多少。這份資料對玩家是攻略，對企劃則是調平衡的依據：如果某個祝福的破關率遠高於其他祝福，就是該調整的信號。</p>
+    <p class="note">為什麼值得做：連續破關天數是每天回來的理由，個人紀錄讓自由練習也有目標，第幾次破關讓今日挑戰可以和朋友比。第一次打開而還沒有資料時，紀錄頁會說明之後會出現什麼，也可以先看一份標示清楚的範例資料。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">破關之後</div>
+    <h2>無盡關卡與六個難度</h2>
+    <p>破關後有兩條路。第一條是帶著金幣、祝福和道具繼續打無盡關卡，目標每關 ×1.25，沒有終點。每 2 關一個魔王，四種魔王輪流出現，看能撐到第幾關。</p>
+    <div class="tbl"><table id="endT">
+      <thead><tr><th>無盡關卡</th><th class="n">目標</th><th>魔王規則</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p>第二條是挑戰下一個難度。破關一個難度就解鎖下一個，規則會累加。難度在自由練習裡選，點手機上方的難度標籤就能切換。</p>
+    <div class="tbl"><table id="diffT">
+      <thead><tr><th>難度</th><th>規則</th><th class="n">第 6 關目標</th><th class="n">全破率</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note">全破率是看期望值選牌、會買祝福時各跑 5,000 局的模擬結果。每升一級，全破率大約變成原本的一半到三分之一。「大師」和「傳說」在模擬裡幾乎破不了，因為模擬不用道具，也不會在魔王關換策略，是給熟練玩家挑戰的上限。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">祝福與道具</div>
+    <h2>十個祝福，最多帶五個</h2>
+    <p>祝福是整局有效的被動能力，在商店用金幣買。上限五個是為了逼玩家選方向：走安全連中路線，還是走高危險大倍數路線。</p>
+    <div class="tbl"><table id="blT">
+      <thead><tr><th>祝福</th><th>效果</th><th class="n">價格</th><th>適合的打法</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note">道具是一次性的：透視會顯示這一手兩張牌各自會不會爆，重抽換一組新牌，雙倍讓下一張牌的得分加倍。保命符會自動擋下一次爆炸，而且不扣手數、不斷連中。開局送透視、重抽、保命符各一個。</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">改善計畫</div>
+    <h2>從現在的 App 走到這一版，分六步</h2>
+    <p>每一步都可以單獨上架，也都有一個可以量的指標。前兩步不需要新畫面，只動現有程式。</p>
+    <div class="plan">
+      <div><span class="ph-n">第 0 步</span><div><h3>先修現有的錯</h3><p>機率說明頁寫減法 10%、乘法 30%，程式實際是各 20%。深色模式下文字可能看不見。iPhone 沒有鎖直向。紀錄沒有排序。</p><p class="ok">驗證：這四項在實機上逐一確認。</p></div></div>
+      <div><span class="ph-n">第 1 步</span><div><h3>把規則改寫成可測試的純函式</h3><p>重寫 GameLogic.swift：牌的危險度、獨立判定、連中倍率、每關手數與目標。發牌改用可指定種子的亂數。這份原型裡的規則程式沒有碰任何畫面，可以直接對照翻成 Swift。</p><p class="ok">驗證：單元測試重現這頁的模擬過關率，誤差在 2 個百分點內。</p></div></div>
+      <div><span class="ph-n">第 2 步</span><div><h3>新的主畫面</h3><p>一個畫面完成選牌、看進度、過關。橫幅廣告移出操作區。五顆不同顏色的按鈕收成一個主要動作。</p><p class="ok">驗證：第一局玩到第 2 關以上的比例。目前有一半的局在第一下結束。</p></div></div>
+      <div><span class="ph-n">第 3 步</span><div><h3>今日挑戰與分享</h3><p>日期種子、可以無限重打、記錄第幾次破關，方格戰績可以複製分享。紀錄頁改成最近幾天的每日結果。</p><p class="ok">驗證：隔日回訪率，以及分享按鈕的使用率。</p></div></div>
+      <div><span class="ph-n">第 4 步</span><div><h3>商店、祝福、魔王</h3><p>先上六個祝福和一個魔王，看資料再補齊。祝福的數值放在設定檔，不用改版就能調。</p><p class="ok">驗證：各祝福的購買率和帶著它的通關率，沒有任何一個超過其他的兩倍。</p></div></div>
+      <div><span class="ph-n">第 5 步</span><div><h3>廣告改成玩家自己選的</h3><p>獎勵廣告放在兩個地方：失敗時多 2 手（每局一次），商店裡免費換一批。開啟 App 的全螢幕廣告改到一局結束之後。六個語系的文字同步更新。</p><p class="ok">驗證：每位玩家每天的廣告收入不低於現在，同時留存不下降。</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">限制</div>
+    <h2>這份原型還沒回答的事</h2>
+    <p>過關率來自固定策略的模擬，不是真人資料。真人會用道具、會在達標後貪心，實際數字要上線後才知道。模擬也沒有把濃霧算成真的看不到，只是把那張牌當成平均危險度。</p>
+    <p>評等目前直接用過關數對應 App 原有的七個稱號，原本以分數訂的十五級門檻需要重新校準。祝福圖鑑和跨局的永久解鎖只在計畫裡，還沒有做。廣告是模擬畫面。</p>
+  </section>
+
+</div>
+
+<aside class="side">
+  <div class="modes" role="tablist" aria-label="模式">
+    <button id="m-daily" role="tab" aria-selected="true">今日挑戰</button>
+    <button id="m-free" role="tab" aria-selected="false">自由練習</button>
+  </div>
+  <div class="ph" id="ph">
+    <canvas id="fx"></canvas>
+    <div class="top"><span class="chip" id="cStage"></span><span class="chip coin" id="cCoin"></span><button class="chip day" id="cDay" aria-label="選擇難度"></button><span class="sp"></span><button class="ib" id="bRec" aria-label="我的紀錄">★</button><button class="ib" id="bMenu" aria-label="規則與紀錄">?</button></div>
+    <div class="boss" id="boss" hidden></div>
+    <div class="score"><div class="val" id="val" aria-live="polite">0</div><div class="goal" id="goal"></div><div class="bar"><i id="barF"></i><b></b></div><div class="barl"><span class="t" id="lT"></span><span class="x" id="l2"></span></div></div>
+    <div class="meta" id="meta"><div class="pips" id="pips"></div><div class="stk" id="stk"></div></div>
+    <div class="bls" id="bls"></div>
+    <div class="cards"><button class="cd" id="c0"></button><button class="cd" id="c1"></button></div>
+    <div class="items" id="items">
+      <button class="it pas" id="i-shield" aria-label="保命符說明"><b id="nShield">1</b>保命符<small>自動擋爆</small></button>
+      <button class="it" id="i-peek"><b>1</b>透視<small>看會不會爆</small></button>
+      <button class="it" id="i-roll"><b>1</b>重抽<small>換一組牌</small></button>
+      <button class="it" id="i-dbl"><b>0</b>雙倍<small>得分 ×2</small></button>
+    </div>
+    <button class="bank" id="bank" disabled></button>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="recpop" id="recpop" role="status"></div>
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet"></div>
+    <div class="ad" id="ad" hidden>獎勵廣告（模擬）<div><i></i></div></div>
+    <div class="coach" id="coach" hidden><div class="hole" id="hole"></div><div class="tip" id="tip" role="dialog" aria-live="polite"></div></div>
+  </div>
+  <div class="keys"><kbd>←</kbd> <kbd>→</kbd> 選牌　<kbd>空白鍵</kbd> 過關　<kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 道具</div>
+</aside>
+</div>
+</div>
+
+<script>
+/*CORE*/
+const P=[.1,.25,.42,.6],ADD=[3,5,7,10],MUL=[0,1.5,2,3],PICKS=7,STAGES=6,STR=1.5,TGT=[18,34,56,80,145,240],EG=1.25;
+const BOSSES=['fog','crush','short','shaky'];
+const BOSSN={fog:['濃霧','其中一張牌完全蓋住，翻開才知道分數和危險度'],crush:['重壓','爆炸時，這關目前的分數砍半（前面各關不受影響）'],short:['急迫','這關少 2 手'],shaky:['不穩','每張牌爆炸率 +10%']};
+const DIFF=[['入門','標準規則'],['進階','目標分數 ×1.15'],['老手','每關少 1 手'],['專家','開局沒有保命符和道具'],['大師','每張牌爆炸率 +5%'],['傳說','商店貴 $1，過關基本獎勵只剩 $2']];
+const BL={add:['加碼','加分牌的分數 +25%，可以重複買',4,1,'任何打法'],snow:['滾雪球','倍數牌的倍率 +0.5，可以重複買',6,1,'高危險大倍數'],cool:['穩手','危險 1 格的牌絕對不會爆',5,0,'安全連中'],gamb:['賭徒','危險 4 格的牌獎勵變 1.5 倍',5,0,'高危險大倍數'],hot:['連勝體質','連中加成上限從 2 倍提高到 3 倍（連中 8 次）',6,0,'安全連中'],grit:['不屈','爆炸時連中減半（無條件進位），不會歸零',5,0,'安全連中'],hand:['多一手','每關多 1 手，可以重複買',6,1,'任何打法'],eye:['千里眼','每關開始時送 1 個透視',5,0,'魔王關'],bank:['利息','過關時每持有 $5 多拿 $1，最多 $3',4,0,'越早買越好'],defuse:['拆彈','每關第一次爆炸無效',7,0,'高危險大倍數']};
+const SHOP={peek:['透視',3],roll:['重抽',2],dbl:['雙倍',3],shield:['保命符',4]};
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function seedOf(){let h=2166136261;for(let i=0;i<arguments.length;i++){h^=arguments[i];h=Math.imul(h,16777619);h^=h>>>13}return h>>>0}
+const BOSS6=['fog','shaky','crush'],BOSSE=['short','fog','shaky','crush'];
+const bossOf=s=>s%2!==0?'':s<=STAGES?BOSS6[s/2-1]:BOSSE[(s/2-4)%4];
+const MODS={heat:['加溫','連中加成翻倍：每連中一次得分 +50%（上限不變）'],calm:['平靜','不會出現危險 4 格的牌'],wild:['狂野','倍數牌的出現率加倍'],lean:['精簡','少 1 手，但過關基本獎勵 +$3'],rich:['豐收','剩下的每一手換 $2'],small:['穩賺','危險 1 格的牌分數 ×2'],fuse:['短引信','每張牌爆炸率 +8%，加分牌分數 ×1.4'],gold:['淘金','每選中一張牌 +$1']};
+const MODK=Object.keys(MODS);
+const modAt=(seed,s)=>bossOf(s)?'':MODK[seedOf(seed,s,99)%MODK.length];
+const modOf=G=>modAt(G.seed,G.stage);
+function nice(x){if(x<100)return Math.round(x);const p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p}
+function targetAt(s,lv){const t=s<=STAGES?TGT[s-1]:TGT[STAGES-1]*Math.pow(EG,s-STAGES);return nice(t*(lv>=1?1.15:1))}
+const DAILY_TM=1.3;
+const targetOf=(G,s)=>nice(targetAt(s,G.lv)*(G.tm||1));
+const target=G=>targetOf(G,G.stage);
+const stretch=G=>nice(target(G)*STR);
+const maxPicks=G=>Math.max(1,PICKS+(G.bl.hand||0)-(G.lv>=2?1:0));
+const stagePicks=G=>Math.max(1,maxPicks(G)-(bossOf(G.stage)==='short'?2:0)-(modOf(G)==='lean'?1:0));
+const price=(G,n)=>n+(G.lv>=5?1:0);
+const canClear=G=>G.value>=target(G)&&G.picks<G.sp;
+function newG(seed,lv){lv=lv||0;const G={ver:6,seed:seed,lv:lv,stage:1,value:0,picks:0,sp:0,idx:0,rr:0,srr:0,streak:0,coins:0,shield:lv>=3?0:1,inv:lv>=3?{peek:0,roll:0,dbl:0}:{peek:1,roll:1,dbl:0},bl:{},dbl:false,peek:false,defused:false,adUsed:false,marks:[],total:0,pair:null,offer:null,phase:'play',endless:false};G.picks=G.sp=stagePicks(G);return G}
+const smult=G=>Math.min(1+(modOf(G)==='heat'?.5:.25)*G.streak,G.bl.hot?3:2);
+function genPair(G){const r=mulberry(seedOf(G.seed,G.stage,G.idx,G.rr));
+  const md=modOf(G),top=md==='calm'?3:4,d1=1+Math.floor(r()*top);let d2=1+Math.floor(r()*(top-1));if(d2>=d1)d2++;
+  const sc=(1+.3*(G.stage-1))*(1+.25*(G.bl.add||0)),bs=bossOf(G.stage),dp=(G.lv>=4?.05:0)+(bs==='shaky'?.1:0)+(md==='fuse'?.08:0);
+  const mk=d=>{const u=r(),tm=r(),b=r(),c={d:d,p:Math.round((P[d-1]+dp)*100)/100};
+    if(d===1&&G.bl.cool)c.p=0;
+    if(tm<(md==='wild'?.56:.28)&&d>1&&G.value>=4){c.op='×';c.n=MUL[d-1]+.5*(G.bl.snow||0);if(d===4&&G.bl.gamb)c.n*=1.5}
+    else{c.op='+';c.n=Math.max(1,Math.round(ADD[d-1]*sc*(.75+.6*u)*(md==='fuse'?1.4:1)*(md==='small'&&d===1?2:1)));if(d===4&&G.bl.gamb)c.n=Math.round(c.n*1.5)}
+    c.boom=b<c.p;return c};
+  const a=mk(d1),b=mk(d2),f=r()<.5?0:1;
+  if(bs==='fog')[a,b][f].fog=true;
+  return[a,b]}
+function deltaOf(G,c){const base=c.op==='+'?c.n:G.value*(c.n-1);return Math.round(base*smult(G)*(G.dbl?2:1))}
+function pickCard(G,i){const c=G.pair[i];let ev;
+  if(c.boom){
+    if(G.bl.defuse&&!G.defused){G.defused=true;ev={kind:'defuse'}}
+    else if(G.shield>0){G.shield--;ev={kind:'shield'}}
+    else{const s0=G.streak;G.streak=G.bl.grit?Math.ceil(s0/2):0;let lost=0;if(bossOf(G.stage)==='crush'){lost=Math.floor(G.value/2);G.value-=lost}G.picks--;ev={kind:'boom',lost:lost,s0:s0,s1:G.streak}}
+  }else{const d=deltaOf(G,c);G.value+=d;G.streak++;G.picks--;if(modOf(G)==='gold')G.coins++;ev={kind:'safe',delta:d}}
+  G.dbl=false;G.peek=false;G.idx++;G.rr=0;return ev}
+function rewardParts(G){const md=modOf(G),a=[['基本',(G.lv>=5?2:3)+(md==='lean'?3:0)],['剩 '+G.picks+' 手',G.picks*(md==='rich'?2:1)]];if(G.value>=stretch(G))a.push(['超標',3]);if(G.bl.bank){const x=Math.min(3,Math.floor(G.coins/5));if(x)a.push(['利息',x])}return a}
+function reward(G){return rewardParts(G).reduce((s,p)=>s+p[1],0)}
+function clearStage(G){G.lastParts=rewardParts(G);const rw=reward(G);G.marks.push(G.value>=stretch(G)?2:1);G.coins+=rw;G.total+=G.value;G.phase=(!G.endless&&G.stage>=STAGES)?'win':'shop';return rw}
+function failStage(G){G.marks.push(0);G.total+=G.value;G.phase='over'}
+function nextStage(G){G.stage++;G.value=0;G.picks=G.sp=stagePicks(G);G.idx=0;G.rr=0;G.srr=0;G.defused=false;G.dbl=false;G.peek=false;if(G.bl.eye)G.inv.peek++;G.phase='play';G.pair=genPair(G)}
+function shopOffer(G){const r=mulberry(seedOf(G.seed,77,G.stage,G.srr)),full=Object.keys(G.bl).length>=5;
+  const pool=Object.keys(BL).filter(k=>G.bl[k]?BL[k][3]:!full);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(r()*(i+1)),t=pool[i];pool[i]=pool[j];pool[j]=t}
+  return pool.slice(0,3)}
+function buyBless(G,k){const b=BL[k];if(!b||G.coins<price(G,b[2]))return false;if(!G.bl[k]&&Object.keys(G.bl).length>=5)return false;if(G.bl[k]&&!b[3])return false;G.coins-=price(G,b[2]);G.bl[k]=(G.bl[k]||0)+1;return true}
+function buyItem(G,k){const s=SHOP[k];if(!s||G.coins<price(G,s[1]))return false;G.coins-=price(G,s[1]);if(k==='shield')G.shield++;else G.inv[k]++;return true}
+/*END*/
+
+/* 模擬結果：scratchpad/sim6.js，入門難度每種策略 5,000 局；其他難度只跑「期望值＋商店」 */
+const SIM=[[98,92,95,95],[89,77,82,86],[72,63,72,82],[32,33,42,67],[23,32,39,75],[6,9,18,48]];
+const SIMALL=[0.3,0.4,1.7,16];
+const SIMLV=[16,9.9,4.6,2.8,1.2,0.8];
+const RECN={total:['單局最高總分',[100,250,500,800,1200],'各關分數加總，含無盡關卡'],stage:['單關最高分',[30,60,100,160,250,400],'一關之內打到的分數'],pick:['單手最高得分',[10,20,40,80,150],'一張牌一次拿到的分數，倍數牌加上雙倍道具最容易破'],streak:['最長連中',[3,5,8,12,16,20],'連中會跨關延續，爆炸就重算'],deep:['最多過關數',[3,6,8,10,12,15],'6 是破關，之後算無盡關卡'],coins:['單局賺到最多金幣',[10,20,35,50,80],'過關獎勵的加總，不扣花掉的']};
+
+const $=s=>document.querySelector(s);
+const K='ipp-v6';let save={};try{save=JSON.parse(localStorage.getItem(K)||'{}')||{}}catch(e){save={}}
+save.daily=save.daily||{};save.runs=save.runs||{};save.unlock=save.unlock||0;save.stats=save.stats||{};
+const ST=save.stats;['runs','clears','picks','safe','booms','shields','abandon','allSuper'].forEach(k=>{ST[k]=ST[k]||0});ST.rec=ST.rec||{};ST.lv=ST.lv||[];ST.bl=ST.bl||{};
+const persist=()=>{try{localStorage.setItem(K,JSON.stringify(save))}catch(e){}};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const today=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const mdOf=d=>{const s=String(d);return(+s.slice(4,6))+'/'+(+s.slice(6))};
+const TIER=['直覺迷路了','感覺不太靈','普通水準','小有靈感','預感強到爆','神準直覺','歐皇現世'];
+const GOOD=['#FFB21E','#16D6A3','#FFFCF2'],BAD=['#FF3B5C','#FFB21E','#05071C'];
+let mode='daily',G=null,locked=false;
+const ph=$('#ph'),cd=[$('#c0'),$('#c1')],elV=$('#val'),sheet=$('#sheet');
+
+/* 靜態表格 */
+(function(){
+  $('#blT tbody').innerHTML=Object.keys(BL).map(k=>{const b=BL[k];return '<tr><td><b>'+b[0]+'</b></td><td>'+b[1]+'</td><td class="n">$'+b[2]+'</td><td class="was">'+b[4]+'</td></tr>'}).join('');
+  $('#simT tbody').innerHTML=SIM.map((r,i)=>{const b=bossOf(i+1);return '<tr><td>第 '+(i+1)+' 關</td><td class="n">'+fmt(targetAt(i+1,0))+'</td><td class="was">'+(b?BOSSN[b][0]+'：'+BOSSN[b][1]:'')+'</td>'+r.map((x,j)=>'<td class="n'+(j===3?' hi':'')+'">'+x+'%</td>').join('')+'</tr>'}).join('')+'<tr><td><b>六關全破</b></td><td></td><td></td>'+SIMALL.map((x,j)=>'<td class="n'+(j===3?' hi':'')+'"><b>'+x+'%</b></td>').join('')+'</tr>';
+  $('#simN').textContent='各關的數字是「打到這一關的人裡面有多少過關」。每關分數歸零，倍數牌只乘這一關的分數，所以 ×2 的 42% 風險有對應的上限。魔王改成每兩關一個（第 2、4、6 關），其他關卡各抽一條特殊規則。第 4 關的魔王「不穩」讓爆炸率 +10%，是最明顯的關卡，所以這關的目標刻意壓低。看期望值並買祝福的全破率約 16%；只選安全牌（0.3%）或只選危險牌（0.4%）都很難破關，不買祝福只有 1.7%。模擬遇到濃霧蓋住的牌時，只用平均值來估。';
+  $('#diffT tbody').innerHTML=DIFF.map((d,i)=>'<tr><td><b>'+(i+1)+'　'+d[0]+'</b></td><td>'+(i?'前一級的規則，再加上：'+d[1]:d[1])+'</td><td class="n">'+fmt(targetAt(6,i))+'</td><td class="n hi">'+SIMLV[i]+'%</td></tr>').join('');
+  const er=[];for(let s=7;s<=12;s++){const b=bossOf(s);er.push('<tr><td>第 '+s+' 關</td><td class="n">'+fmt(targetAt(s,0))+'</td><td class="was">'+(b?BOSSN[b][0]+'：'+BOSSN[b][1]:'')+'</td></tr>')}
+  $('#endT tbody').innerHTML=er.join('');
+  $('#recT tbody').innerHTML=Object.keys(RECN).map(k=>'<tr><td><b>'+RECN[k][0]+'</b></td><td class="was">'+RECN[k][2]+'</td><td>'+RECN[k][1].map(fmt).join(' → ')+'</td></tr>').join('');
+  const WHY={heat:'連中值錢，適合選安全牌累積',calm:'最多 3 格，可以放心挑大的',wild:'倍數牌變多，先用加分牌墊底再翻倍',lean:'手數更緊，但過關獎勵高',rich:'早點過關最划算，拚超標的代價變大',small:'1 格的牌變得又穩又賺',fuse:'全部更危險但更賺，保命符的價值提高',gold:'每一手都有錢，值得多打幾手拚超標'};
+  $('#modT tbody').innerHTML=MODK.map(k=>'<tr><td><b>'+MODS[k][0]+'</b></td><td>'+MODS[k][1]+'</td><td class="was">'+WHY[k]+'</td></tr>').join('');
+})();
+
+/* 音效 */
+const A={c:null,mute:!!save.mute,
+  init(){if(this.c||this.mute)return;try{this.c=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}},
+  t(f,d,type,v,w){if(this.mute||!this.c)return;try{const c=this.c,o=c.createOscillator(),g=c.createGain(),t0=c.currentTime+(w||0);o.type=type||'sine';o.frequency.setValueAtTime(f,t0);g.gain.setValueAtTime(v||.1,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+d+.02)}catch(e){}},
+  tick(s){this.t(620+s*110,.05,'square',.035)},
+  safe(n){const N=[523,587,659,784,880,1047,1175,1319,1568],f=N[Math.max(0,Math.min(n-1,8))];this.t(f,.24,'triangle',.14);this.t(f*1.5,.32,'sine',.06,.06)},
+  boom(){if(this.mute||!this.c)return;try{const c=this.c,n=Math.floor(c.sampleRate*.4),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const s=c.createBufferSource(),g=c.createGain();s.buffer=b;g.gain.value=.28;s.connect(g);g.connect(c.destination);s.start()}catch(e){}this.t(120,.4,'sawtooth',.1)},
+  shield(){this.t(880,.12,'sine',.1);this.t(1320,.26,'sine',.08,.08)},
+  goal(){[659,784,1047].forEach((f,i)=>this.t(f,.18,'triangle',.1,.14+i*.08))},
+  clear(){[523,659,784,1047,1319].forEach((f,i)=>this.t(f,.26,'triangle',.12,i*.09))},
+  fail(){[392,330,262].forEach((f,i)=>this.t(f,.3,'sawtooth',.06,i*.14))},
+  coin(){this.t(1319,.08,'square',.045);this.t(1760,.14,'square',.045,.06)},
+  item(){this.t(988,.1,'triangle',.1);this.t(1319,.12,'triangle',.08,.07)}};
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+
+/* 粒子 */
+const fx=$('#fx'),ctx=fx.getContext('2d');let PT=[],raf=0,dpr=1,fw=0,fh=0;
+function sizeFx(){dpr=Math.min(2,window.devicePixelRatio||1);fw=ph.clientWidth;fh=ph.clientHeight;fx.width=fw*dpr;fx.height=fh*dpr}
+function burst(x,y,cols,n,pow){if(reduce)return;if(!fw)sizeFx();for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=pow*(.3+Math.random());PT.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,g:.22,life:1,d:.014+Math.random()*.02,s:3+Math.random()*5,c:cols[i%cols.length],r:Math.random()*6})}if(!raf)raf=requestAnimationFrame(tick)}
+function tick(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,fw,fh);PT=PT.filter(p=>p.life>0&&p.y<fh+20);for(const p of PT){p.vy+=p.g;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.life-=p.d;p.r+=.2;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,p.life*1.6));ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore()}raf=PT.length?requestAnimationFrame(tick):0}
+function center(el){const a=el.getBoundingClientRect(),b=ph.getBoundingClientRect();return[a.left-b.left+a.width/2,a.top-b.top+a.height/2]}
+function confetti(){for(let i=0;i<5;i++)setTimeout(()=>burst(fw*(.15+Math.random()*.7),fh*.3,GOOD,22,7),i*110)}
+function shake(){ph.classList.remove('shake');void ph.offsetWidth;if(!reduce)ph.classList.add('shake')}
+let toastT=0;function toast(t,ms){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),ms||1800)}
+
+/* 畫面 */
+function sizeVal(t){const n=t.length;elV.style.fontSize=(n<=3?84:n<=5?64:n<=7?50:n<=9?40:n<=11?32:26)+'px'}
+function showVal(v){const t=fmt(v);elV.textContent=t;sizeVal(t)}
+let cntRaf=0;
+function countTo(a,b){cancelAnimationFrame(cntRaf);if(reduce||a===b){showVal(b);return}const t0=performance.now(),d=420;(function f(now){const k=Math.min(1,(now-t0)/d),e=1-Math.pow(1-k,3);showVal(a+(b-a)*e);if(k<1)cntRaf=requestAnimationFrame(f)})(t0)}
+function cardHTML(c){if(c.fog)return '<span class="k">蓋住的牌</span><span class="n">?</span><span class="to">翻開才知道</span><span class="fuse"><i></i><i></i><i></i><i></i></span><span class="dl">危險 ？</span>'+(G.peek?'<span class="pk '+(c.boom?'bad':'ok')+'">'+(c.boom?'會爆':'安全')+'</span>':'')+'<span class="res"></span>';
+  let f='';for(let i=1;i<=4;i++)f+='<i'+(!c.fog&&i<=c.d?' class="on"':'')+'></i>';
+  return '<span class="k">'+(c.op==='+'?'加分':'倍數')+'</span><span class="n">'+c.op+c.n+'</span><span class="to">成功 → '+fmt(G.value+deltaOf(G,c))+'</span><span class="fuse">'+f+'</span><span class="dl">'+(c.fog?'危險 ？':'危險 '+c.d+' · '+Math.round(c.p*100)+'%')+'</span>'+(G.peek?'<span class="pk '+(c.boom?'bad':'ok')+'">'+(c.boom?'會爆':'安全')+'</span>':'')+'<span class="res"></span>'}
+function renderCards(anim){cd.forEach((el,i)=>{const c=G.pair[i];el.className='cd d'+(c.fog?'0 fogc':c.d)+(c.op==='×'&&!c.fog?' mul':'')+(anim&&!reduce?' in':'');el.innerHTML=cardHTML(c);el.setAttribute('aria-label',c.fog?'蓋住的牌，分數和危險度不明':(c.op==='+'?'加 ':'乘 ')+c.n+'，危險 '+c.d+' 格')})}
+function renderHud(){const T=target(G),S=stretch(G),b=bossOf(G.stage),first=G.picks===G.sp;
+  $('#cStage').textContent=G.endless?'無盡 第 '+G.stage+' 關':'第 '+G.stage+' 關 / '+STAGES;$('#cCoin').textContent='$'+G.coins;
+  $('#cDay').textContent=(mode==='daily'?mdOf(G.day)+' 第 '+G.try+' 次':'練習 · '+DIFF[G.lv][0])+' ▾';
+  const md=modOf(G),be=$('#boss');be.hidden=!b&&!md;be.className='boss'+(b?'':' mod');if(b)be.innerHTML='<b>魔王 '+BOSSN[b][0]+'</b>'+BOSSN[b][1];else if(md)be.innerHTML='<b>本關規則 '+MODS[md][0]+'</b>'+MODS[md][1];
+  $('#goal').innerHTML='目標 <b>'+fmt(T)+'</b>　'+(G.value>=S?'超標達成，過關多拿 $3':G.value>=T?(first?'帶來的分數已經夠了，選 1 手就能過關':'已達標，超標線是 '+fmt(S)):'還差 '+fmt(T-G.value));
+  const bf=$('#barF');bf.style.width=Math.max(0,Math.min(100,G.value/S*100))+'%';bf.className=G.value>=S?'dbl':'';
+  $('#lT').innerHTML='過關 <b>'+fmt(T)+'</b>';const l2=$('#l2');l2.innerHTML='超標 <b>'+fmt(S)+'</b> +$3';l2.className='x'+(G.value>=S?' on':'');
+  $('#i-shield').classList.toggle('none',G.shield<=0);
+  let p='<span>剩 '+G.picks+' 手</span>';const n=Math.max(G.sp,G.picks);for(let i=0;i<n;i++)p+='<i'+(i<G.picks?' class="on"':'')+'></i>';$('#pips').innerHTML=p;
+  const s=$('#stk');s.textContent=G.streak>0?'連中 '+G.streak+' · 得分 ×'+smult(G):'連中 0';s.className='stk'+(G.streak>0?' hot':'');
+  const ks=Object.keys(G.bl);$('#bls').innerHTML=ks.length?ks.map(k=>'<span>'+BL[k][0]+(G.bl[k]>1?' ×'+G.bl[k]:'')+'</span>').join(''):'<em>還沒有祝福，過關後可以在商店買</em>';
+  $('#nShield').textContent=G.shield;
+  ['peek','roll','dbl'].forEach(k=>{const e=$('#i-'+k),on=(k==='peek'&&G.peek)||(k==='dbl'&&G.dbl);e.querySelector('b').textContent=on?'✓':G.inv[k];e.disabled=!on&&G.inv[k]<=0;e.classList.toggle('on',on)});
+  const bk=$('#bank'),ok=canClear(G);bk.disabled=!ok;
+  if(ok)bk.innerHTML='過關，拿 $'+reward(G)+'<small>'+rewardParts(G).map(p=>p[0]+' $'+p[1]).join(' + ')+(G.value<S?'　·　到 '+fmt(S)+' 再 +$3':'')+'</small>';
+  else if(G.value>=T)bk.innerHTML='先選 1 手才能過關<small>每關至少要選 1 手</small>';
+  else{const rp=rewardParts(G);bk.innerHTML='達到 '+fmt(T)+' 分才能過關<small>過關 $'+rp[0][1]+' ＋ 剩下每手 $'+(modOf(G)==='rich'?2:1)+' ＋ 超標再 $3</small>'}}
+function render(anim){showVal(G.value);renderHud();renderCards(anim)}
+
+/* 存檔 */
+const keep=()=>{save.runs[mode]=G;persist()};
+function tabs(){$('#m-daily').setAttribute('aria-selected',mode==='daily');$('#m-free').setAttribute('aria-selected',mode==='free')}
+function fresh(lv){const d=mode==='daily';if(lv==null)lv=d?0:Math.min(save.lastLv||0,save.unlock);G=newG(d?today():(Math.random()*2147483647)|0,d?0:lv);G.day=today();if(d){G.tm=DAILY_TM;const r=save.daily[G.day];G.try=(r&&r.tries||0)+1}G.pair=genPair(G);keep()}
+function load(m){mode=m;tabs();const r=save.runs[m];closeSheet();locked=false;
+  if(r&&r.ver===6&&r.pair&&r.seed!=null&&(r.phase==='play'||r.phase==='shop')&&(m==='free'||r.day===today()))G=r;else fresh();
+  render(true);if(G.phase==='shop'){if(!G.offer)G.offer=shopOffer(G);showShop()}}
+function startFree(lv){if(mode==='free')abandon();save.lastLv=lv;mode='free';tabs();closeSheet();fresh(lv);render(true);locked=false;toast('自由練習 · 難度「'+DIFF[lv][0]+'」',2000)}
+
+/* 一手 */
+function pick(i){if(locked||G.phase!=='play'||sheetOn())return;locked=true;A.init();
+  const c=G.pair[i],steps=c.d+1,gap=reduce?0:115;cd[i].classList.remove('in');cd[1-i].classList.remove('in');cd[i].classList.add('arm');cd[1-i].classList.add('dim');
+  for(let s=0;s<steps;s++)setTimeout(()=>A.tick(s),s*gap);
+  setTimeout(()=>resolve(i),reduce?40:steps*gap+140)}
+function resolve(i){const el=cd[i],v0=G.value,T=target(G),first=G.picks===G.sp,ev=pickCard(G,i),xy=center(el),r=el.querySelector('.res');el.classList.remove('arm');ST.picks++;if(ev.kind==='safe')ST.safe++;else if(ev.kind==='boom')ST.booms++;else ST.shields++;
+  if(ev.kind==='safe'){el.classList.add('safe');r.textContent='+'+fmt(ev.delta);A.safe(G.streak);burst(xy[0],xy[1],GOOD,16+Math.min(34,Math.round(Math.log2(ev.delta+1)*4)),5.5);countTo(v0,G.value);buzz(12);rec('pick',ev.delta);rec('streak',G.streak);
+    if((v0<T||first)&&G.value>=T&&G.picks>0){toast('達標！可以過關，也可以拚超標 '+fmt(stretch(G)),2400);A.goal()}}
+  else if(ev.kind==='boom'){el.classList.add('boom');r.innerHTML=(ev.lost?'爆了 −'+fmt(ev.lost):'爆了')+'<small>扣 1 手</small>';A.boom();burst(xy[0],xy[1],BAD,44,8);shake();buzz([30,40,60]);if(ev.lost)countTo(v0,G.value);
+    if(G.bl.grit&&ev.s0>0)toast('不屈發動：連中 '+ev.s0+' → '+ev.s1+'，得分仍 ×'+smult(G)+'（沒有不屈會歸零）',3000);else toast('爆了：扣 1 手'+(ev.lost?'、分數減半':'')+(ev.s0>0?'，連中 '+ev.s0+' 歸零':''),2200)}
+  else{el.classList.add('saved');r.innerHTML=(ev.kind==='shield'?'保命符擋下':'拆彈成功')+'<small>不扣手數</small>';A.shield();burst(xy[0],xy[1],['#FFFCF2','#C9D1FF'],22,4.5);
+    toast(ev.kind==='shield'?'保命符擋下爆炸：這手不算、不扣手數，連中保留（剩 '+G.shield+' 張）':'拆彈：這關第一次爆炸無效，不扣手數',2800)}
+  renderHud();
+  setTimeout(()=>{if(G.picks<=0){if(canClear(G))doClear();else doFail();return}
+    G.pair=genPair(G);keep();renderCards(true);locked=false},reduce?260:800)}
+function doClear(){if(G.phase!=='play'||!canClear(G))return;locked=true;A.init();const rw=clearStage(G);G.lastRw=rw;G.earned=(G.earned||0)+rw;rec('stage',G.value);A.clear();confetti();buzz([20,40,20]);
+  if(G.phase==='win'){finish();setTimeout(showEnd,950)}else{G.offer=shopOffer(G);keep();setTimeout(showShop,750)}}
+function doFail(){locked=true;A.fail();const T=target(G);
+  if(!G.adUsed){openSheet('<h4><small>第 '+G.stage+' 關 · 手數用完</small>還差 '+fmt(T-G.value)+' 分</h4><p>看一支獎勵廣告可以多拿 2 手，每局限一次。</p><div class="row"><button class="btn" data-a="end">結束這局</button><button class="btn pri" data-a="ad">看廣告，多 2 手</button></div>')}
+  else{failStage(G);finish();showEnd()}}
+function finish(){const six=G.marks.slice(0,STAGES),won=six.length===STAGES&&six.every(x=>x>0),cl=G.marks.filter(x=>x>0).length;
+  if(won&&G.lv>=save.unlock&&G.lv<DIFF.length-1){save.unlock=G.lv+1;G.newUnlock=G.lv+1}
+  if(mode==='daily'){const r=save.daily[G.day]||{tries:0,win:false,total:-1,marks:[]};if(!G.counted){r.tries=Math.max(r.tries||0,G.try||1);(r.hist=r.hist||[]).push({c:cl,t:G.total});G.counted=true}
+    if(won&&!r.win){r.win=true;r.winTry=G.try;r.marks=G.marks.slice();r.total=G.total}else if(!r.win&&G.total>r.total){r.marks=G.marks.slice();r.total=G.total}else if(r.win&&won&&G.total>r.total){r.marks=G.marks.slice();r.total=G.total}
+    save.daily[G.day]=r}
+  if(G.endless)save.deep=Math.max(save.deep||0,cl);
+  stats(won,cl,six);keep()}
+function useItem(k){if(locked||G.phase!=='play'||sheetOn()||!(G.inv[k]>0))return;if((k==='peek'&&G.peek)||(k==='dbl'&&G.dbl))return;A.init();G.inv[k]--;
+  if(k==='peek'){G.peek=true;toast('透視：這一手的結果已經顯示在牌上')}else if(k==='dbl'){G.dbl=true;toast('雙倍：下一張牌的得分加倍')}else{G.rr++;G.peek=false;G.pair=genPair(G);toast('重抽：換了一組新牌')}
+  A.item();keep();renderHud();renderCards(k==='roll')}
+
+/* 我的紀錄 */
+const dk=d=>d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+let recT=0,dTab='all',dashSample=false;
+function recPop(t){const e=$('#recpop');e.textContent='★ 新紀錄　'+t;e.classList.add('on');clearTimeout(recT);recT=setTimeout(()=>e.classList.remove('on'),2400);A.coin()}
+function rec(k,v){const R=ST.rec,o=R[k];if(o&&v<=o.v)return;R[k]={v:v,d:today()};if(o&&G){G.broke=G.broke||[];if(!G.broke.includes(k)){G.broke.push(k);recPop(RECN[k][0]+' '+fmt(v))}}persist()}
+function stats(won,cl,six){const all2=six.length===STAGES&&six.every(x=>x===2);
+  if(!G.sdone){G.sdone=true;ST.runs++;if(G.aband)ST.abandon++;if(won)ST.clears++;if(all2)ST.allSuper++;
+    Object.keys(G.bl).forEach(k=>{const b=ST.bl[k]||(ST.bl[k]={runs:0,wins:0});b.runs++;if(won)b.wins++});
+    const L=mode==='daily'?(ST.dl||(ST.dl={runs:0,clears:0,best:0})):(ST.lv[G.lv]||(ST.lv[G.lv]={runs:0,clears:0,best:0}));L.runs++;if(won)L.clears++}
+  const L=mode==='daily'?ST.dl:ST.lv[G.lv];L.best=Math.max(L.best,G.total);
+  rec('total',G.total);rec('deep',cl);rec('coins',G.earned||0)}
+function abandon(){if(!G||!(G.phase==='play'||G.phase==='shop'))return;if(mode!=='daily'&&G.stage===1&&G.picks===G.sp)return;G.aband=true;failStage(G);finish()}
+function dailyStats(D){let played=0,wins=0,best=null,sumW=0;Object.keys(D).forEach(k=>{const r=D[k];played++;if(r.win){wins++;sumW+=r.winTry||1;best=best==null?(r.winTry||1):Math.min(best,r.winTry||1)}});
+  const d=new Date();let st=0;if(!(D[dk(d)]&&D[dk(d)].win))d.setDate(d.getDate()-1);while(D[dk(d)]&&D[dk(d)].win){st++;d.setDate(d.getDate()-1)}
+  let bs=0,run=0;const e=new Date();for(let i=0;i<400;i++){const r=D[dk(e)];if(r&&r.win){run++;bs=Math.max(bs,run)}else run=0;e.setDate(e.getDate()-1)}
+  return{played:played,wins:wins,best:best,avg:wins?sumW/wins:null,streak:st,bestStreak:bs}}
+function sampleData(){const t=new Date(),ago=n=>{const d=new Date(t);d.setDate(d.getDate()-n);return dk(d)},D={};
+  const st={runs:23,clears:4,picks:301,safe:201,booms:84,shields:16,abandon:3,allSuper:0,unlock:2,
+    rec:{total:{v:1040,d:ago(3)},stage:{v:212,d:ago(3)},pick:{v:64,d:ago(6)},streak:{v:11,d:ago(1)},deep:{v:8,d:ago(3)},coins:{v:41,d:ago(9)}},
+    lv:[{runs:15,clears:3,best:912},{runs:5,clears:1,best:1040},{runs:3,clears:0,best:388}],dl:{runs:31,clears:7,best:1180},
+    bl:{add:{runs:12,wins:1},grit:{runs:9,wins:2},snow:{runs:7,wins:2},cool:{runs:6,wins:1},bank:{runs:5,wins:0}}};
+  [[0,3,0],[1,2,1],[2,4,1],[3,1,1],[5,5,0],[6,3,1],[8,2,1],[9,6,0],[10,3,1],[12,2,1]].forEach(a=>{const n=a[0],tr=a[1],w=a[2];
+    D[ago(n)]={tries:tr,win:!!w,winTry:w?tr:0,total:0,marks:[],hist:Array.from({length:tr},(_,i)=>({c:w&&i===tr-1?6:Math.min(5,1+i+(n%2)),t:0}))}});
+  return{st:st,D:D}}
+function tile(l,v,s){return '<div class="tile"><span>'+l+'</span><b>'+v+'</b>'+(s?'<i>'+s+'</i>':'<i>&nbsp;</i>')+'</div>'}
+function dashAll(st){const R=st.rec,g=k=>R[k]?fmt(R[k].v):'—',dd=k=>R[k]?mdOf(R[k].d)+' 創下':'',u=st===ST?save.unlock:st.unlock;
+  let h='<div class="tiles">'+tile('單局最高總分',g('total'),dd('total'))+tile('最長連中',g('streak'),dd('streak'))+tile('最多過關數',g('deep'),R.deep&&R.deep.v>STAGES?'無盡多打 '+(R.deep.v-STAGES)+' 關':dd('deep'))+tile('已解鎖難度',DIFF[u][0],'共 6 級')+'</div>';
+  h+='<div class="lab">個人紀錄與下一個目標</div><div class="recs">'+Object.keys(RECN).map(k=>{const r=R[k],v=r?r.v:0,ms=RECN[k][1],got=ms.filter(m=>v>=m).length,nx=ms.find(m=>v<m),pv=got?ms[got-1]:0,w=nx?Math.round((v-pv)/(nx-pv)*100):100,nw=st===ST&&G&&G.broke&&G.broke.includes(k);
+    return '<div class="rc'+(nw?' new':'')+'"><span>'+RECN[k][0]+(nw?'　這局剛破':'')+'</span><b>'+(r?fmt(v):'—')+'</b><small><i style="--w:'+Math.max(0,Math.min(100,w))+'%"></i>'+(nx?'下一個目標 '+fmt(nx):'全部達成')+'　'+got+' / '+ms.length+'</small></div>'}).join('')+'</div>';
+  const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  h+='<div class="lab">累計</div><div class="calc"><span>總局數（含放棄 '+st.abandon+' 局）</span><b>'+st.runs+'</b><span>破關率</span><b>'+pct(st.clears,st.runs)+'</b><span>選中率（'+st.safe+' / '+st.picks+' 手）</span><b>'+pct(st.safe,st.picks)+'</b><span>保命符擋下</span><b>'+st.shields+' 次</b><span>全關超標</span><b>'+st.allSuper+' 次</b></div>';
+  return h}
+function dashDay(D){const s=dailyStats(D),tr=D[today()];
+  let h='<div class="tiles">'+tile('破關天數',s.wins+' / '+s.played,'玩過的天數')+tile('連續破關',s.streak+' 天','最長 '+s.bestStreak+' 天')+tile('最少幾次破關',s.best?'第 '+s.best+' 次':'—','')+tile('平均幾次破關',s.avg?s.avg.toFixed(1)+' 次':'—','')+'</div>';
+  h+='<div class="lab">今天每一次打到哪裡</div>';
+  if(tr&&tr.hist&&tr.hist.length){const hs=tr.hist.slice(-8),off=tr.hist.length-hs.length;
+    h+='<div class="tries">'+hs.map((x,i)=>'<div title="第 '+(off+i+1)+' 次：'+(x.c>=STAGES?'破關':'過了 '+x.c+' 關')+'"><span>'+(x.c>=STAGES?'破關':x.c+' 關')+'</span><i class="'+(x.c>=STAGES?'w':'')+'" style="height:'+Math.max(3,Math.round(Math.min(x.c,STAGES)/STAGES*66))+'px"></i></div>').join('')+'</div>';
+    h+='<div class="trl">'+hs.map((x,i)=>'<span>第 '+(off+i+1)+' 次</span>').join('')+'</div>';
+    h+='<p>柱子是每次過了幾關，綠色是破關。'+(tr.win?'今天在第 '+tr.winTry+' 次破關。':'今天已挑戰 '+tr.tries+' 次，還沒破關。')+'</p>'}
+  else h+='<p>今天還沒挑戰。</p>';
+  h+='<div class="lab">最近 14 天</div><div class="cal">';
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=dk(d),r=D[k];
+    h+='<div class="'+(r?(r.win?'w':'l'):'')+(i===0?' t':'')+'" title="'+mdOf(k)+(r?(r.win?' 第 '+r.winTry+' 次破關':' 挑戰 '+(r.tries||1)+' 次未破'):' 未玩')+'"><span>'+mdOf(k)+'</span><b>'+(r?(r.win?(r.winTry||1):'×'+(r.tries||1)):'')+'</b></div>'}
+  return h+'</div><p>綠格的數字是第幾次破關，紅框的「×3」是挑戰 3 次還沒破，空白是沒玩。</p>'}
+function dashLv(st){const u=st===ST?save.unlock:st.unlock,dl=st.dl||{runs:0,clears:0,best:0},row=(n,L)=>'<tr><td>'+n+'</td><td>'+(L?L.runs:0)+'</td><td>'+(L?L.clears:0)+'</td><td>'+(L&&L.best?fmt(L.best):'—')+'</td></tr>';
+  return '<table><thead><tr><th>難度</th><th>局數</th><th>破關</th><th>最高總分</th></tr></thead><tbody>'+row('今日挑戰',dl)+DIFF.map((d,i)=>i>u?'<tr><td>'+d[0]+'</td><td colspan="3">未解鎖</td></tr>':row(d[0],st.lv[i])).join('')+'</tbody></table><p>破關一個難度就解鎖下一個。今日挑戰的目標比「入門」高 30%。</p>'}
+function dashBl(st){const ks=Object.keys(st.bl).sort((a,b)=>st.bl[b].runs-st.bl[a].runs);
+  if(!ks.length)return '<p>還沒買過祝福。過關後在商店買的祝福，會記錄帶著它打了幾局、破關幾次。</p>';
+  return '<table><thead><tr><th>祝福</th><th>帶過幾局</th><th>破關</th><th>破關率</th></tr></thead><tbody>'+ks.map(k=>{const b=st.bl[k];return '<tr><td>'+BL[k][0]+'</td><td>'+b.runs+'</td><td>'+b.wins+'</td><td>'+Math.round(b.wins/b.runs*100)+'%</td></tr>'}).join('')+'</tbody></table><p>局數少的時候破關率會跳很大，打越多越準。</p>'}
+function showDash(tab){dTab=tab||dTab;const empty=!ST.runs&&!Object.keys(save.daily).length;let st=ST,D=save.daily;if(dashSample){const x=sampleData();st=x.st;D=x.D}
+  let h='<h4><small>INTUITION++</small>我的紀錄</h4>'+(dashSample?'<span class="ex">範例資料，不是你的紀錄</span>':'');
+  if(empty&&!dashSample){h+='<p>打完第一局後，這裡會出現你的最高分、最長連中、今日挑戰第幾次破關等紀錄。每一項都有下一個目標可以挑戰。</p><div class="row"><button class="btn" data-a="sample">先看範例</button><button class="btn pri" data-a="close">開始玩</button></div>';openSheet(h);return}
+  h+='<div class="dtabs" role="tablist">'+[['all','總覽'],['day','今日挑戰'],['lv','難度'],['bl','祝福']].map(t=>'<button data-t="'+t[0]+'" role="tab" aria-selected="'+(dTab===t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+  h+=dTab==='all'?dashAll(st):dTab==='day'?dashDay(D):dTab==='lv'?dashLv(st):dashBl(st);
+  h+='<div class="row">'+(dashSample?'<button class="btn" data-a="dash">看我的紀錄</button>':'')+'<button class="btn pri" data-a="close">回到遊戲</button></div>';
+  openSheet(h)}
+
+/* 面板 */
+const sheetOn=()=>sheet.classList.contains('on')||!$('#ad').hidden||cStep>=0;
+/* 第一次開啟的導覽：每一步圈出一個區塊 */
+const COACH=[
+  ['.score','目標分數','每關要在 7 手內把分數打到目標，下一關從 0 開始。進度條上的白線是過關線，最右邊是超標線。上方的橫條是這關的特殊規則，每關都不一樣。'],
+  ['.cards','二選一，看危險度','底下的引信格數越多越容易爆，分數也越大。深色牌是倍數牌，乘在這關的分數上，分數越高越值錢。爆了只會扣 1 手，不會直接結束。'],
+  ['#meta','手數與連中','白點是剩下的手數。連續選中會累積連中，每次得分多 25%，最多兩倍。連中會帶到下一關，但爆一次就歸零。'],
+  ['#items','保命符與道具','保命符不用按。選到會爆的牌時它自動擋下：這手不算、不扣手數，連中也不會斷。透視、重抽、雙倍要自己按，用一次就沒了。'],
+  ['#bank','過關拿金幣','達標後按這裡過關。金幣＝基本 $3＋剩下每一手 $1，打到超標線（目標的 1.5 倍）再多 $3。金幣在關卡之間的商店買祝福和道具。'],
+  ['.score','要不要拚超標？','達標後可以繼續打。到超標線多拿 $3、戰績格變金色，分數也算進最後的總分。代價是每多用一手少 $1，也多一次爆炸的風險。破關後還有無盡關卡和更高的難度。']];
+let cStep=-1;
+function coach(i){const c=$('#coach');if(i<0||i>=COACH.length){c.hidden=true;cStep=-1;save.onb=1;persist();return}
+  cStep=i;c.hidden=false;const s=COACH[i],a=ph.querySelector(s[0]).getBoundingClientRect(),b=ph.getBoundingClientRect(),h=$('#hole'),t=$('#tip'),top=a.top-b.top,last=i===COACH.length-1;
+  Object.assign(h.style,{top:(top-5)+'px',left:(a.left-b.left-5)+'px',width:(a.width+10)+'px',height:(a.height+10)+'px'});
+  t.innerHTML='<div class="cr"><span>新手導覽 '+(i+1)+' / '+COACH.length+'</span></div><h5>'+s[1]+'</h5><p>'+s[2]+'</p><div class="cr"><span></span>'+(last?'':'<button class="btn" data-c="skip">跳過</button>')+'<button class="btn pri" data-c="next">'+(last?'開始玩':'下一步')+'</button></div>';
+  if(top+a.height/2>b.height/2){t.style.top='auto';t.style.bottom=(b.height-top+18)+'px'}else{t.style.bottom='auto';t.style.top=(top+a.height+18)+'px'}
+  const nb=t.querySelector('[data-c="next"]');try{nb.focus({preventScroll:true})}catch(e){}}
+$('#coach').addEventListener('click',e=>{const x=e.target.closest('button');if(!x)return;A.init();A.tick(1);coach(x.dataset.c==='skip'?99:cStep+1)});
+function openSheet(h){sheet.innerHTML=h;sheet.scrollTop=0;$('#scrim').classList.add('on');sheet.classList.add('on')}
+function closeSheet(){$('#scrim').classList.remove('on');sheet.classList.remove('on')}
+function marksHTML(m){let h='';const n=Math.max(STAGES,m.length);for(let i=0;i<n;i++){const x=m[i];h+='<i class="'+(x==null?'':'m'+x)+'">'+(x===2?'超':x===1?'過':x===0?'敗':'')+'</i>'}return '<div class="marks">'+h+'</div>'}
+function showShop(){const nx=G.stage+1,nb=bossOf(nx),own=Object.keys(G.bl).length;
+  let h='<h4><small>'+(G.endless&&G.stage>STAGES?'無盡 ':'')+'第 '+G.stage+' 關過關，拿到 $'+G.lastRw+'</small>商店　$'+G.coins+'</h4>';
+  if(G.lastParts)h+='<div class="calc">'+G.lastParts.map(p=>'<span>'+(p[0]==='基本'?'過關基本':p[0]==='超標'?'打到超標線':p[0]==='利息'?'祝福「利息」':'剩下的手數（每手 $1）')+'</span><b>$'+p[1]+'</b>').join('')+'<span class="sum">這關合計</span><b class="sum">$'+G.lastRw+'</b></div>';
+  const nm=modAt(G.seed,nx);h+='<div class="nx'+(nb?' bs':'')+'">下一關目標 <b>'+fmt(targetOf(G,nx))+'</b>'+(nb?'<br>魔王「'+BOSSN[nb][0]+'」：'+BOSSN[nb][1]:nm?'<br>規則「'+MODS[nm][0]+'」：'+MODS[nm][1]:'')+'</div>';
+  h+='<div class="lab">祝福（已有 '+own+' / 5）</div>';
+  h+=G.offer.map(k=>{if(!k)return '<button class="of got" disabled><b>已購買</b><span>這個位置賣完了</span></button>';const b=BL[k],pr=price(G,b[2]),no=G.coins<pr||(!G.bl[k]&&own>=5);return '<button class="of" data-b="'+k+'"'+(no?' disabled':'')+'><b>'+b[0]+(G.bl[k]?'（已有 '+G.bl[k]+'）':'')+'</b><span>'+b[1]+'</span><em>$'+pr+'</em></button>'}).join('');
+  if(!G.offer.length)h+='<p>祝福已經帶滿，也沒有可以重複買的。</p>';
+  h+='<div class="lab">道具</div><div class="sis">'+Object.keys(SHOP).map(k=>{const pr=price(G,SHOP[k][1]);return '<button class="si" data-i="'+k+'"'+(G.coins<pr?' disabled':'')+'>'+SHOP[k][0]+'<b>$'+pr+'</b><i>有 '+(k==='shield'?G.shield:G.inv[k])+'</i></button>'}).join('')+'</div>';
+  h+='<div class="row"><button class="btn sm" data-a="reroll"'+(G.coins<1?' disabled':'')+'>換一批 $1</button><button class="btn pri" data-a="go">前往第 '+nx+' 關</button></div>';
+  const st=sheet.scrollTop;openSheet(h);sheet.scrollTop=st}
+function shareText(){const m=[],n=Math.max(STAGES,G.marks.length);for(let i=0;i<n;i++){const x=G.marks[i];m.push(x===2?'🟨':x===1?'🟩':x===0?'🟥':'⬜')}
+  const cl=G.marks.filter(x=>x>0).length;
+  const won=G.marks.length>=STAGES&&G.marks.slice(0,STAGES).every(x=>x>0);
+  return 'INTUITION++ '+mdOf(G.day)+(mode==='daily'?' 今日挑戰':' 自由練習 · '+DIFF[G.lv][0])+'\n'+(mode==='daily'&&won?'第 '+G.try+' 次挑戰破關':mode==='daily'?'第 '+G.try+' 次挑戰，止步第 '+G.stage+' 關':G.phase==='win'?'六關全破':cl>=STAGES?'無盡模式打到第 '+(cl+1)+' 關':'止步第 '+G.stage+' 關')+(cl>STAGES?'，無盡 +'+(cl-STAGES)+' 關':'')+' · 總分 '+fmt(G.total)+'\n'+m.join('')}
+function showEnd(){const win=G.phase==='win',cl=G.marks.filter(x=>x>0).length,ks=Object.keys(G.bl),six=G.marks.slice(0,STAGES),sup=six.filter(x=>x===2).length,all2=six.length===STAGES&&six.every(x=>x===2);
+  const head=win?'六關全破':cl>=STAGES?'無盡模式止步第 '+G.stage+' 關':'止步第 '+G.stage+' 關';
+  let h='<h4><small>'+head+(mode==='daily'?' · 今日挑戰第 '+G.try+' 次':' · 難度「'+DIFF[G.lv][0]+'」')+'</small>'+TIER[Math.min(cl,6)]+(all2?' · 全關超標':'')+'</h4>';
+  h+='<div class="big">'+fmt(G.total)+'</div>'+marksHTML(G.marks)+'<p>綠色是過關，金色是超標。前六關超標 '+sup+' / 6'+(cl>STAGES?'，無盡關卡多打了 '+(cl-STAGES)+' 關':'')+'。'+(save.deep>STAGES?'無盡最遠紀錄：第 '+(save.deep+1)+' 關。':'')+'</p>';
+  if(win&&G.newUnlock)h+='<div class="nx">解鎖新難度「'+DIFF[G.newUnlock][0]+'」：'+DIFF[G.newUnlock][1]+'。難度會累加，前面的規則也一起生效。</div>';
+  h+='<p>'+(ks.length?'這局帶的祝福：'+ks.map(k=>BL[k][0]+(G.bl[k]>1?' ×'+G.bl[k]:'')).join('、'):'這局沒有買祝福。')+'</p>';
+  if(G.broke&&G.broke.length)h+='<div class="nx">這局打破 '+G.broke.length+' 項個人紀錄：'+G.broke.map(k=>RECN[k][0]+' '+fmt(ST.rec[k].v)).join('、')+'</div>';
+  h+='<pre class="shr" id="shr">'+shareText()+'</pre>';
+  if(win){h+='<p>可以帶著金幣、祝福和道具繼續打無盡關卡。無盡關卡沒有終點，每 2 關一個魔王，看能撐到第幾關。</p><div class="row"><button class="btn" data-a="share">複製戰績</button><button class="btn pri" data-a="endless">繼續無盡關卡</button></div>';
+    const nx=G.lv+1;h+='<div class="row">'+(mode==='daily'?'<button class="btn" data-a="again">同一副牌再打</button><button class="btn" data-a="free">去自由練習</button>':nx<DIFF.length&&nx<=save.unlock?'<button class="btn" data-lv="'+nx+'">挑戰難度「'+DIFF[nx][0]+'」</button>':'<button class="btn" data-a="again">再來一局</button>')+'</div>'}
+  else if(mode==='daily'){h+='<p>同一副牌在同樣的位置會發同樣的牌，哪張會爆也一樣。記住這次翻到的結果，下次就能避開。今日挑戰可以無限重打，紀錄會寫你第幾次破關。</p>';
+    h+='<div class="row"><button class="btn" data-a="share">複製戰績</button><button class="btn" data-a="free">去自由練習</button></div><div class="row"><button class="btn pri" data-a="again">再挑戰一次（第 '+(G.try+1)+' 次）</button></div>'}
+  else h+='<div class="row"><button class="btn" data-a="share">複製戰績</button><button class="btn" data-a="diff">換難度</button></div><div class="row"><button class="btn pri" data-a="again">再來一局</button></div>';
+  openSheet(h)}
+function showDiff(){const u=save.unlock,mid=mode==='free'&&(G.stage>1||G.picks<G.sp)&&G.phase==='play';
+  let h='<h4><small>自由練習</small>選擇難度</h4><p>破關一個難度就解鎖下一個。難度會累加：選「老手」時，「進階」的規則也一起生效。今日挑戰有自己的難度（目標 ×1.3），可以無限重打。</p>';
+  h+=DIFF.map((d,i)=>'<button class="of" data-lv="'+i+'"'+(i>u?' disabled':'')+'><b>'+(i+1)+'　'+d[0]+(mode==='free'&&G.lv===i?'（目前）':'')+'</b><span>'+(i>u?'破關「'+DIFF[i-1][0]+'」後解鎖':d[1])+'</span><em>'+SIMLV[i]+'%</em></button>').join('');
+  h+='<p>右邊是模擬的全破率（看期望值選牌、會買祝福）。選了之後會開始新的一局'+(mid?'，目前這局會放棄':'')+'。</p><div class="row"><button class="btn pri" data-a="close">取消</button></div>';
+  openSheet(h)}
+function showMenu(){const days=[];for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);const k=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();days.push([k,save.daily[k]])}
+  let h='<h4><small>INTUITION++</small>規則</h4>';
+  h+='<p>每關在手數內把分數打到目標就能過關，下一關從 0 開始，各關分數加起來是最後的總分。每張牌獨立判定會不會爆，爆了只扣一手。連中一次得分多 25%，最高 2 倍；連中會帶到下一關，爆一次就歸零。</p>';
+  h+='<p>'+(mode==='daily'?'今日挑戰':'這個難度')+'的六關目標：'+[1,2,3,4,5,6].map(s=>fmt(targetOf(G,s))).join('、')+'。第 2、4、6 關是魔王關，其他每一關都會抽一條特殊規則。</p>';
+  h+='<div class="lab">今日挑戰</div><p>每天換一副牌，所有人拿到的牌和規則都一樣。目標比「入門」高 30%，第一次很難過，但可以無限重打：同樣的位置會發同樣的牌，哪張會爆也一樣，記住結果就能越打越遠。紀錄寫的是你第幾次破關。</p>';
+  h+='<div class="lab">每關的特殊規則</div><div class="calc">'+MODK.map(k=>'<span>'+MODS[k][1]+'</span><b>'+MODS[k][0]+'</b>').join('')+'</div>';
+  h+='<table><thead><tr><th>危險度</th><th>爆炸機率</th><th>倍數牌</th></tr></thead><tbody>'+P.map((p,i)=>'<tr><td>'+(i+1)+' 格</td><td>'+Math.round(p*100)+'%</td><td>'+(MUL[i]?'×'+MUL[i]:'不出現')+'</td></tr>').join('')+'</tbody></table>';
+  h+='<div class="lab">金幣怎麼算</div><div class="calc"><span>過關基本</span><b>$3</b><span>剩下的每一手</span><b>+$1</b><span>總分打到超標線（目標 ×1.5）</span><b>+$3</b><span>祝福「利息」：每持有 $5</span><b>+$1，最多 $3</b></div>';
+  h+='<p>例：第 1 關目標 18、超標線 27。用 4 手打到 28 分就過關，剩 3 手：$3 + $3 + $3 = $9。</p>';
+  h+='<div class="lab">拚超標的獎勵</div><p>多 $3，戰績格變金色，前六關都超標拿到「全關超標」稱號，多打的分數也算進總分。代價是每多用一手少 $1，也多一次爆炸的風險。</p>';
+  h+='<div class="lab">保命符</div><p>不用按。選到會爆的牌時自動擋下：這手不算、不扣手數，連中也不會斷。開局送 1 張，商店 $4 一張。</p>';
+  h+='<div class="lab">破關之後</div><p>可以接著打無盡關卡，沒有終點，每 2 關一個魔王，看能撐到第幾關。破關也會解鎖下一個難度，共六級，點上方的日期或難度標籤切換。'+(save.deep>STAGES?'你的無盡紀錄：第 '+(save.deep+1)+' 關。':'')+'</p>';
+  h+='<div class="row"><button class="btn" data-a="dash">我的紀錄</button><button class="btn" data-a="snd">'+(A.mute?'開啟音效':'關閉音效')+'</button></div>';
+  h+='<div class="row"><button class="btn" data-a="tour">再看導覽</button><button class="btn" data-a="diff">選擇難度</button><button class="btn" data-a="restart">'+(mode==='daily'?'放棄（算一次）':'放棄重來')+'</button></div><div class="row"><button class="btn pri" data-a="close">回到遊戲</button></div>';
+  openSheet(h)}
+function playAd(done){const a=$('#ad');a.hidden=false;a.classList.remove('run');void a.offsetWidth;a.classList.add('run');setTimeout(()=>{a.hidden=true;a.classList.remove('run');done()},reduce?300:2500)}
+sheet.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;A.init();const a=b.dataset.a;
+  if('lv' in b.dataset){startFree(+b.dataset.lv);return}
+  if(b.dataset.t){showDash(b.dataset.t);return}
+  if(b.dataset.b){const k=b.dataset.b;if(buyBless(G,k)){G.offer[G.offer.indexOf(k)]=null;A.coin();keep();renderHud();showShop()}return}
+  if(b.dataset.i){if(buyItem(G,b.dataset.i)){A.coin();keep();renderHud();showShop()}return}
+  if(a==='reroll'){if(G.coins>=1){G.coins--;G.srr++;G.offer=shopOffer(G);A.item();keep();renderHud();showShop()}}
+  else if(a==='go'){nextStage(G);G.offer=null;keep();closeSheet();render(true);locked=false;const bs=bossOf(G.stage),ms=modOf(G);toast(bs?'魔王「'+BOSSN[bs][0]+'」：'+BOSSN[bs][1]:'第 '+G.stage+' 關規則「'+MODS[ms][0]+'」：'+MODS[ms][1],2800)}
+  else if(a==='endless'){G.endless=true;G.phase='shop';G.offer=shopOffer(G);keep();renderHud();showShop()}
+  else if(a==='ad'){closeSheet();playAd(()=>{G.adUsed=true;G.picks=2;G.pair=genPair(G);keep();render(true);locked=false;toast('多了 2 手')})}
+  else if(a==='end'){failStage(G);finish();showEnd()}
+  else if(a==='dash'){dashSample=false;showDash('all')}
+  else if(a==='sample'){dashSample=true;showDash('all')}
+  else if(a==='snd'){A.mute=!A.mute;save.mute=A.mute;persist();if(!A.mute){A.init();A.item()}b.textContent=A.mute?'開啟音效':'關閉音效'}
+  else if(a==='again'||a==='restart'){if(a==='restart')abandon();closeSheet();fresh(mode==='free'?G.lv:null);render(true);locked=false}
+  else if(a==='free'){load('free')}
+  else if(a==='diff'){showDiff()}
+  else if(a==='close'){closeSheet()}
+  else if(a==='tour'){closeSheet();setTimeout(()=>coach(0),reduce?0:340)}
+  else if(a==='share'){const t=shareText(),ok=()=>{b.textContent='已複製'},no=()=>{try{const r=document.createRange();r.selectNodeContents($('#shr'));const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}b.textContent='已選取，請手動複製'};
+    try{navigator.clipboard.writeText(t).then(ok,no)}catch(e){no()}}
+});
+$('#scrim').addEventListener('click',()=>{if(sheet.querySelector('[data-a="close"]'))closeSheet()});
+cd.forEach((el,i)=>el.addEventListener('click',()=>pick(i)));
+$('#bank').addEventListener('click',()=>{if(!locked&&!sheetOn())doClear()});
+['peek','roll','dbl'].forEach(k=>$('#i-'+k).addEventListener('click',()=>useItem(k)));
+$('#i-shield').addEventListener('click',()=>{if(sheetOn())return;toast(G.shield>0?'保命符 ×'+G.shield+'：選到會爆的牌時自動擋下，不扣手數，連中也不會斷':'沒有保命符了，過關後可以在商店買',3200)});
+$('#bMenu').addEventListener('click',()=>{if(!locked&&!sheetOn())showMenu()});
+$('#cDay').addEventListener('click',()=>{if(!locked&&!sheetOn())showDiff()});
+$('#bRec').addEventListener('click',()=>{if(!locked&&!sheetOn()){dashSample=false;showDash('all')}});
+$('#m-daily').addEventListener('click',()=>{if(mode!=='daily'&&!(locked&&!sheetOn()))load('daily')});
+$('#m-free').addEventListener('click',()=>{if(mode!=='free'&&!(locked&&!sheetOn()))load('free')});
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||sheetOn())return;const tg=e.target&&e.target.tagName;
+  if(e.key==='ArrowLeft'){e.preventDefault();pick(0)}else if(e.key==='ArrowRight'){e.preventDefault();pick(1)}
+  else if(e.key===' '&&tg!=='BUTTON'){if(!locked&&canClear(G)){e.preventDefault();doClear()}}
+  else if(e.key==='1')useItem('peek');else if(e.key==='2')useItem('roll');else if(e.key==='3')useItem('dbl')});
+addEventListener('resize',()=>{sizeFx();if(cStep>=0)coach(cStep)});
+sizeFx();load('daily');
+if(!save.onb)((document.fonts&&document.fonts.ready)||Promise.resolve()).then(()=>setTimeout(()=>{if(!save.onb&&cStep<0)coach(0)},350));
+</script>
