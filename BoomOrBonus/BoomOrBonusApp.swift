@@ -28,6 +28,16 @@ struct BoomOrBonusApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousPhase: ScenePhase? = nil
     
+    /// QA / UI tests: no AppOpenAd over the game when launched with -seed or -noAds (Debug only).
+    private static let adsSuppressed: Bool = {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-seed") || args.contains("-noAds")
+        #else
+        return false
+        #endif
+    }()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -47,9 +57,10 @@ struct BoomOrBonusApp: App {
         
         WindowGroup {
             NavigationView {
-                ContentView()
+                GameScreen()
                     .onAppear {
                         // 起動直後に表示
+                        guard !Self.adsSuppressed else { return }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                             AppOpenAdManager.shared.loadAd()
                             AppOpenAdManager.shared.showAdIfAvailable() //已經併入load
@@ -58,6 +69,7 @@ struct BoomOrBonusApp: App {
                     }
                     .onChange(of: scenePhase) { newPhase, _ in
                         print("ScenePhase changed to: \(newPhase)")
+                        if Self.adsSuppressed { previousPhase = newPhase; return }
                         if newPhase == .inactive, let previous = previousPhase {
                             if previous == .background {
                                 // 從背景轉為前台，呼叫展示廣告的程式
@@ -70,6 +82,7 @@ struct BoomOrBonusApp: App {
                         previousPhase = newPhase
                     }
             }
+            .navigationViewStyle(.stack)
             .modelContainer(sharedModelContainer)
         }
     }
