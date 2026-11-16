@@ -35,7 +35,7 @@
 | `lastRewardParts` | [(label, amount)] | 剛過關的金幣明細，商店顯示用 |
 | `phase` | enum `play / shop / win / over` | |
 | `endless` | Bool | 是否已進入無盡關卡 |
-| `coinsEarned` | Int | 這局賺到的金幣總和（紀錄用，不扣花費） |
+| `coinsEarned` | Int | 這局過關獎勵的加總（紀錄用，不扣花費，不含淘金每手的 $1） |
 | `brokenRecords` | [RecordID] | 這局打破的紀錄 |
 | `newlyUnlockedLevel` | Int? | 這局解鎖的難度 |
 | `statsCounted` / `dailyCounted` / `abandoned` | Bool | 避免重複計數 |
