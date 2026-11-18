@@ -2,15 +2,26 @@
 //  ResultSheet.swift
 //  BoomOrBonus
 //
-//  Simple version of 02-screens-ux.md §5.2: headline, total, stage marks, 再來一局.
-//  Share text, unlock note, record break note and the full button set come in later phases.
+//  02-screens-ux.md §5.2 for free play: headline, total, stage marks, unlock note, blessings and the
+//  button matrix. Copy-result text (Phase 4) and the record-break note (Phase 6) are not here yet.
+//  Banner ads show on this sheet only (02 §12), mocked for now.
 //
 
 import SwiftUI
 
 struct ResultSheet: View {
     let run: RunState
-    let playAgain: () -> Void
+    let unlock: Int
+    let deepest: Int
+    let actions: Actions
+
+    struct Actions {
+        var sameDeck: () -> Void = {}
+        var newRun: () -> Void = {}
+        var endless: () -> Void = {}
+        var changeLevel: () -> Void = {}
+        var playLevel: (Int) -> Void = { _ in }
+    }
 
     private static let tiers = ["直覺迷路了", "感覺不太靈", "普通水準", "小有靈感", "預感強到爆", "神準直覺", "歐皇現世"]
 
@@ -49,14 +60,80 @@ struct ResultSheet: View {
 
             marks
 
-            SheetBody(text: Text("綠色是過關，金色是超標。前六關超標 \(stretchCount) / \(Rules.STAGES)。"))
+            SheetBody(text: summary)
+                .accessibilityIdentifier("result.summary")
+
+            if let lv = run.newlyUnlockedLevel, run.phase == .win {
+                let d = Rules.difficulties[lv]
+                Text("解鎖新難度「\(d.name)」：\(d.desc)。難度會累加，前面的規則也一起生效。")
+                    .font(.system(size: 13.5, weight: .medium))
+                    .foregroundStyle(Theme.sheetText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(Theme.mint.opacity(0.22), in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("result.unlock")
+            }
 
             SheetBody(text: blessingsText)
 
-            Button("再來一局", action: playAgain)
+            if run.phase == .win {
+                SheetBody(text: Text("可以帶著金幣、祝福和道具繼續打無盡關卡。無盡關卡沒有終點，每 2 關一個魔王，看能撐到第幾關。"))
+            }
+
+            buttons
+
+            MockBannerView()
+        }
+    }
+
+    /// 說明: marks legend, stretch count, endless extras.
+    private var summary: Text {
+        var t = Text("綠色是過關，金色是超標。前六關超標 \(stretchCount) / \(Rules.STAGES)")
+        if cleared > Rules.STAGES { t = t + Text("，無盡關卡多打了 \(cleared - Rules.STAGES) 關") }
+        t = t + Text("。")
+        if deepest > Rules.STAGES { t = t + Text("無盡最遠紀錄：第 \(deepest + 1) 關。") }
+        return t
+    }
+
+    // MARK: Buttons (02 §5.2, free play)
+    //   win:      [繼續無盡關卡]   [挑戰難度「下一級」 或 再來一局] [同一副牌再打]
+    //   not won:  [換難度] [再來一局]   [同一副牌再打 (primary)]
+
+    @ViewBuilder
+    private var buttons: some View {
+        if run.phase == .win {
+            Button("繼續無盡關卡", action: actions.endless)
                 .buttonStyle(SheetButtonStyle(primary: true))
-                .accessibilityIdentifier("result.again")
+                .accessibilityIdentifier("result.endless")
                 .padding(.top, 4)
+            HStack(spacing: 8) {
+                let next = run.lv + 1
+                if next < Rules.difficulties.count && next <= unlock {
+                    Button { actions.playLevel(next) } label: { Text("挑戰難度「\(Rules.difficulties[next].name)」") }
+                        .buttonStyle(SheetButtonStyle())
+                        .accessibilityIdentifier("result.nextLevel")
+                } else {
+                    Button("再來一局", action: actions.newRun)
+                        .buttonStyle(SheetButtonStyle())
+                        .accessibilityIdentifier("result.new")
+                }
+                Button("同一副牌再打", action: actions.sameDeck)
+                    .buttonStyle(SheetButtonStyle())
+                    .accessibilityIdentifier("result.retry")
+            }
+        } else {
+            HStack(spacing: 8) {
+                Button("換難度", action: actions.changeLevel)
+                    .buttonStyle(SheetButtonStyle())
+                    .accessibilityIdentifier("result.changeLevel")
+                Button("再來一局", action: actions.newRun)
+                    .buttonStyle(SheetButtonStyle())
+                    .accessibilityIdentifier("result.new")
+            }
+            .padding(.top, 4)
+            Button("同一副牌再打", action: actions.sameDeck)
+                .buttonStyle(SheetButtonStyle(primary: true))
+                .accessibilityIdentifier("result.retry")
         }
     }
 

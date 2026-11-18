@@ -127,11 +127,11 @@ final class GameViewModelTests: XCTestCase {
         XCTAssertNotNil(store(with: run).restorableFreeRun())
     }
 
-    func testRestoredShopPhaseReopensStageClear() {
+    func testRestoredShopPhaseReopensShop() {
         var run = GameEngine.newRun(seed: 99)
         run.phase = .shop
         let vm = makeVM(store: store(with: run), seed: nil)
-        XCTAssertEqual(vm.sheet, .stageClear)
+        XCTAssertEqual(vm.sheet, .shop)
         XCTAssertFalse(vm.canInteract)
     }
 
@@ -260,7 +260,7 @@ final class GameViewModelTests: XCTestCase {
         vm.bank()                                  // double tap: ignored
         await vm.waitUntilSettled()
         XCTAssertEqual(vm.run.phase, .shop)
-        XCTAssertEqual(vm.sheet, .stageClear)
+        XCTAssertEqual(vm.sheet, .shop)
         XCTAssertEqual(vm.run.marks.count, 1)
         XCTAssertFalse(vm.run.lastRewardParts.isEmpty)
 

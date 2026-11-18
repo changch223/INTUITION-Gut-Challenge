@@ -205,4 +205,85 @@ final class EngineRuleTests: XCTestCase {
         let data = try JSONEncoder().encode(r)
         XCTAssertEqual(try JSONDecoder().decode(RunState.self, from: data), r)
     }
+
+    // MARK: - Overflow safety (Phase 3: long endless runs)
+
+    func testNiceDoesNotTrapAndIsUnchangedBelowTheCap() {
+        // Below the old trap point nothing changes: 240 * 1.25^170 is about 1e19 > Int.max, 1.25^100 is fine.
+        XCTAssertEqual(GameEngine.nice(145), 150)
+        XCTAssertEqual(GameEngine.nice(240 * pow(1.25, 20)), GameEngine.targetAt(stage: 26, lv: 0))
+        for stage in [100, 150, 170, 175, 176, 177, 178, 179, 180, 200, 5000] {
+            let t = GameEngine.targetAt(stage: stage, lv: 5)
+            XCTAssertGreaterThan(t, 0, "stage \(stage)")
+            XCTAssertLessThanOrEqual(t, Rules.SCORE_CAP)
+        }
+        XCTAssertEqual(GameEngine.nice(.infinity), Rules.SCORE_CAP)
+        XCTAssertEqual(GameEngine.nice(.nan), Rules.SCORE_CAP)
+        XCTAssertEqual(GameEngine.nice(1e300), Rules.SCORE_CAP)
+        XCTAssertEqual(GameEngine.nice(9.4e17), 940_000_000_000_000_000)
+        // Targets keep growing until the cap, never decrease.
+        var last = 0
+        for stage in 1...400 {
+            let t = GameEngine.targetAt(stage: stage, lv: 0)
+            XCTAssertGreaterThanOrEqual(t, last)
+            last = t
+        }
+    }
+
+    func testDeltaAndValueAndTotalSaturateInsteadOfTrapping() {
+        var r = makeRun()
+        r.endless = true
+        r.blessings = [.snow: 40, .hot: 1, .add: 40]
+        r.streak = 100
+        r.doubleArmed = true
+        r.value = Rules.SCORE_CAP - 5
+        let mul = Card(danger: 4, p: 0, op: .mul, n: 1e6, boom: false)
+        XCTAssertEqual(GameEngine.deltaOf(r, mul), Rules.SCORE_CAP)
+        r.pair = [mul, mul]
+        _ = GameEngine.pickCard(&r, index: 0)
+        XCTAssertEqual(r.value, Rules.SCORE_CAP, "value is held at the cap")
+        // Total near Int.max.
+        r.total = Int.max - 10
+        r.phase = .play
+        r.picks = r.stagePicksAtStart - 1
+        GameEngine.clearStage(&r)
+        XCTAssertEqual(r.total, Int.max)
+        r.total = Int.min + 10
+        r.value = -Rules.SCORE_CAP
+        GameEngine.failStage(&r)
+        XCTAssertGreaterThanOrEqual(r.total, Int.min)
+    }
+
+    func testEndlessRunToStage200DoesNotCrash() {
+        var r = GameEngine.newRun(seed: 20261116, lv: 5)
+        r.blessings = [.snow: 5, .add: 5, .hand: 3, .hot: 1, .gamb: 1, .bank: 1, .eye: 1]
+        r.endless = true
+        r.coins = 50
+        var maxTarget = 0
+        for stage in 1...200 {
+            XCTAssertEqual(r.stage, stage)
+            XCTAssertEqual(r.pair.count, 2)
+            let target = GameEngine.target(r)
+            XCTAssertGreaterThan(target, 0)
+            XCTAssertLessThanOrEqual(GameEngine.stretch(r), Rules.SCORE_CAP)
+            XCTAssertGreaterThanOrEqual(target, maxTarget)
+            maxTarget = target
+            // A few real picks (multiplier cards compound the score), then bank the stage.
+            r.streak = 30
+            r.doubleArmed = true
+            for _ in 0..<3 where r.picks > 1 {
+                let i = r.pair[0].op == .mul ? 0 : 1
+                _ = GameEngine.pickCard(&r, index: i)
+                r.pair = GameEngine.genPair(r)
+            }
+            r.value = max(r.value, target)       // reaching the target is not the point here
+            r.picks = min(r.picks, max(0, r.stagePicksAtStart - 1))
+            GameEngine.clearStage(&r)
+            XCTAssertEqual(r.phase, .shop)
+            XCTAssertNoThrow(Shop.shopOffer(r))
+            GameEngine.nextStage(&r)
+        }
+        XCTAssertEqual(r.stage, 201)
+        XCTAssertGreaterThan(r.total, 0)
+    }
 }

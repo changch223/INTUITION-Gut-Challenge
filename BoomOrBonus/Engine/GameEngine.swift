@@ -14,8 +14,10 @@ enum GameEngine {
 
     static func nice(_ x: Double) -> Int {
         if x < 100 { return Int(Rules.jsRound(x)) }
+        // Endless targets grow 1.25x per stage and would trap Int(Double) around stage 176.
+        if !(x < Double(Rules.SCORE_CAP)) { return Rules.SCORE_CAP }
         let p = pow(10.0, floor(log10(x)) - 1)
-        return Int(Rules.jsRound(x / p) * p)
+        return Rules.clampScore(Rules.jsRound(x / p) * p)
     }
 
     static func targetAt(stage: Int, lv: Int) -> Int {
@@ -130,7 +132,7 @@ enum GameEngine {
 
     static func deltaOf(_ run: RunState, _ c: Card) -> Int {
         let base = c.op == .add ? c.n : Double(run.value) * (c.n - 1)
-        return Int(Rules.jsRound(base * smult(run) * (run.doubleArmed ? 2 : 1)))
+        return Rules.clampScore(Rules.jsRound(base * smult(run) * (run.doubleArmed ? 2 : 1)))
     }
 
     @discardableResult
@@ -157,7 +159,7 @@ enum GameEngine {
             }
         } else {
             let d = deltaOf(run, c)
-            run.value += d
+            run.value = Rules.saturatingScore(run.value, d)
             run.streak += 1
             run.picks -= 1
             if modOf(run) == .gold {
@@ -200,14 +202,14 @@ enum GameEngine {
         run.marks.append(run.value >= stretch(run) ? 2 : 1)
         run.coins += rw
         run.coinsEarned += rw
-        run.total += run.value
+        run.total = Rules.saturatingAdd(run.total, run.value)
         run.phase = (!run.endless && run.stage >= Rules.STAGES) ? .win : .shop
         return rw
     }
 
     static func failStage(_ run: inout RunState) {
         run.marks.append(0)
-        run.total += run.value
+        run.total = Rules.saturatingAdd(run.total, run.value)
         run.phase = .over
     }
 

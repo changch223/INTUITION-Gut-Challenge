@@ -38,5 +38,6 @@ struct RuleBanner: View {
             .padding(.horizontal, 11).padding(.vertical, 7)
             .background(background, in: RoundedRectangle(cornerRadius: 10))
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("ruleBanner")
     }
 }

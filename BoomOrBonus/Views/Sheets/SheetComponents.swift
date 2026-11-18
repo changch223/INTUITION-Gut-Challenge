@@ -69,3 +69,85 @@ struct SheetContainer<Content: View>: View {
             .padding(.horizontal, 18).padding(.top, 22).padding(.bottom, 20)
     }
 }
+
+/// Stand-in for the banner ad (02 §12: banners live only in the shop and on the result sheet).
+/// Phase 7 swaps this for the real `BannerAdView`.
+struct MockBannerView: View {
+    var body: some View {
+        Text("廣告（模擬）")
+            .font(.system(size: 11.5, weight: .medium))
+            .foregroundStyle(Theme.sheetMuted)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Theme.sheetButton.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityHidden(true)
+            .accessibilityIdentifier("bannerMock")
+    }
+}
+
+/// Small grey section label ("祝福（已有 1 / 5）").
+struct SheetLabel: View {
+    let text: Text
+    var body: some View {
+        text.font(.system(size: 12.5, weight: .bold))
+            .foregroundStyle(Theme.sheetMuted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
+    }
+}
+
+private struct ListHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct VisibleHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// Cream bottom panel with a scrolling list and a footer that is always on screen (shop, difficulty).
+/// One ScrollView sized to its content (never swapped for another variant), so the scroll position
+/// survives content changes such as buying something. A bottom fade hints that there is more below.
+struct SheetScaffold<List: View, Footer: View>: View {
+    @ViewBuilder let list: List
+    @ViewBuilder let footer: Footer
+
+    @State private var listHeight: CGFloat = 0
+    @State private var visibleHeight: CGFloat = 0
+
+    /// iPhone SE class screens: callers use tighter spacing.
+    static var isShortScreen: Bool { UIScreen.main.bounds.height < 740 }
+
+    private var scrollable: Bool { listHeight > visibleHeight + 1 }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ScrollView {
+                list
+                    .padding(.bottom, scrollable ? 18 : 0)
+                    .background(GeometryReader { Color.clear.preference(key: ListHeightKey.self, value: $0.size.height) })
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .onPreferenceChange(ListHeightKey.self) { listHeight = $0 }
+            .frame(maxHeight: listHeight > 0 ? listHeight : .infinity)
+            .background(GeometryReader { Color.clear.preference(key: VisibleHeightKey.self, value: $0.size.height) })
+            .onPreferenceChange(VisibleHeightKey.self) { visibleHeight = $0 }
+            .overlay(alignment: .bottom) {
+                if scrollable {
+                    LinearGradient(colors: [Theme.sheetBg.opacity(0), Theme.sheetBg], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 26)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            footer
+        }
+        .padding(.horizontal, 18).padding(.top, 22).padding(.bottom, 12)
+        .background {
+            Theme.sheetBg
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
+                .ignoresSafeArea(edges: .bottom)
+        }
+    }
+}

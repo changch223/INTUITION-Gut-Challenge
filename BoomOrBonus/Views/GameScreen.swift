@@ -70,7 +70,7 @@ struct GameScreen: View {
 
     private var game: some View {
         VStack(spacing: 10) {
-            TopBar(run: vm.run)
+            TopBar(run: vm.run, levelEnabled: vm.canInteract, openLevel: { vm.openDifficulty() })
             RuleBanner(boss: vm.boss, mod: vm.mod)
             ScorePanel(value: vm.run.value, target: vm.target, stretch: vm.stretch, isFirstPick: vm.isFirstPick)
                 .overlay(alignment: .bottom) { toastView }
@@ -142,14 +142,21 @@ struct GameScreen: View {
                       missing: max(0, vm.target - vm.run.value),
                       endRun: { vm.endRun() },
                       watchAd: { vm.watchAd() })
-        case .stageClear:
-            // Phase 3 replaces this with ShopSheet
-            StageClearSheet(stage: vm.run.stage,
-                            parts: vm.run.lastRewardParts.map { (vm.label(for: $0), $0.amount) },
-                            total: vm.run.lastRewardParts.reduce(0) { $0 + $1.amount },
-                            next: { vm.nextStage() })
+        case .shop:
+            ShopSheet(vm: vm)
+        case .difficulty:
+            DifficultySheet(currentLevel: vm.run.lv,
+                            unlock: vm.unlock,
+                            inProgress: vm.runInProgress,
+                            pick: { vm.startLevel($0) },
+                            cancel: { vm.closeDifficulty() })
         case .result:
-            ResultSheet(run: vm.run, playAgain: { vm.startNewRun() })
+            ResultSheet(run: vm.run, unlock: vm.unlock, deepest: vm.deepest,
+                        actions: .init(sameDeck: { vm.retrySameDeck() },
+                                       newRun: { vm.startNewRun() },
+                                       endless: { vm.startEndless() },
+                                       changeLevel: { vm.openDifficulty() },
+                                       playLevel: { vm.startLevel($0) }))
         case nil:
             EmptyView()
         }

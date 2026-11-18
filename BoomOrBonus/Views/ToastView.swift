@@ -17,6 +17,7 @@ struct ToastView: View {
             .multilineTextAlignment(.center)
             .padding(.horizontal, 14).padding(.vertical, 9)
             .background(Theme.deepNight, in: RoundedRectangle(cornerRadius: 20))
+            .accessibilityIdentifier("toast")
             .frame(maxWidth: 340)
             .allowsHitTesting(false)
     }

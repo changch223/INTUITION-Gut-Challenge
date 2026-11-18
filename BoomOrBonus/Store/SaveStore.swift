@@ -3,7 +3,7 @@
 //  BoomOrBonus
 //
 //  SaveData (03-data-persistence.md §2) as one JSON file in Application Support.
-//  Phase 2 only stores runs.free, lastLevel, muted, onboardingDone.
+//  Phase 3 adds unlock and deepest (Phase 2: runs.free, lastLevel, muted, onboardingDone).
 //  Every field decodes with a default so later phases can add fields
 //  (daily, unlock, deepest, stats...) without invalidating existing saves.
 //
@@ -32,17 +32,21 @@ struct SaveData: Codable, Equatable {
 
     var runs = Runs()
     var lastLevel = 0
+    var unlock = 0           // highest unlocked difficulty, 0...5
+    var deepest = 0          // endless: most stages cleared (marks > 0) in one run
     var muted = false
     var onboardingDone = false
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case runs, lastLevel, muted, onboardingDone }
+    private enum CodingKeys: String, CodingKey { case runs, lastLevel, unlock, deepest, muted, onboardingDone }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         runs = try c.decodeIfPresent(Runs.self, forKey: .runs) ?? Runs()
         lastLevel = try c.decodeIfPresent(Int.self, forKey: .lastLevel) ?? 0
+        unlock = min(5, max(0, try c.decodeIfPresent(Int.self, forKey: .unlock) ?? 0))
+        deepest = max(0, try c.decodeIfPresent(Int.self, forKey: .deepest) ?? 0)
         muted = try c.decodeIfPresent(Bool.self, forKey: .muted) ?? false
         onboardingDone = try c.decodeIfPresent(Bool.self, forKey: .onboardingDone) ?? false
     }
@@ -52,7 +56,23 @@ final class SaveStore {
     /// RunState.version this build understands (03 §1: currently 6).
     static let runVersion = 6
 
-    static let shared = SaveStore(url: SaveStore.defaultURL())
+    /// Debug builds only: `-seed` (QA / UI tests) uses `save-qa.json`, wiped at launch, so the real
+    /// `save-v6.json` is never touched. `-qaSave` (without `-seed`) re-opens `save-qa.json` as it is,
+    /// to test kill / relaunch. Release builds always use the real file.
+    static let shared: SaveStore = {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-seed") || args.contains("-qaSave"), let url = qaURL() {
+            if args.contains("-seed") { try? FileManager.default.removeItem(at: url) }
+            return SaveStore(url: url)
+        }
+        #endif
+        return SaveStore(url: defaultURL())
+    }()
+
+    static func qaURL() -> URL? {
+        defaultURL()?.deletingLastPathComponent().appendingPathComponent("save-qa.json")
+    }
 
     private let url: URL?
     private(set) var data: SaveData
@@ -85,8 +105,8 @@ final class SaveStore {
         try? raw.write(to: url, options: .atomic)
     }
 
-    /// 03 §2.1: same version, and phase is play or shop (shop re-opens the stage-clear screen).
-    /// Phase 2 has no daily mode, so the day check does not apply.
+    /// 03 §2.1: same version, and phase is play or shop (shop re-opens the shop with the same shelf).
+    /// Free mode only (Phase 4 adds daily), so the day check does not apply.
     func restorableFreeRun() -> RunState? {
         guard let run = data.runs.free else { return nil }
         guard run.version == Self.runVersion else { return nil }

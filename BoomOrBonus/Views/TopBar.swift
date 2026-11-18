@@ -2,13 +2,17 @@
 //  TopBar.swift
 //  BoomOrBonus
 //
-//  02-screens-ux.md §2.1. Day/difficulty, ★ and ? are Phase 3+ features: shown but inert.
+//  02-screens-ux.md §2.1. The difficulty chip opens the difficulty sheet (Phase 3);
+//  ★ (records, Phase 6) and ? (rules, Phase 5) are shown but inert.
+//  Daily mode (Phase 4) will change the chip to "M/D 第 N 次".
 //
 
 import SwiftUI
 
 struct TopBar: View {
     let run: RunState
+    var levelEnabled = true
+    var openLevel: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 6) {
@@ -31,13 +35,18 @@ struct TopBar: View {
                 .background(Theme.gold, in: Capsule())
                 .accessibilityLabel("金幣 \(run.coins)")
 
-            // Placeholder until the difficulty picker exists (Phase 3).
-            Text("練習 · \(Rules.difficulties[run.lv].name) ▾")
-                .font(.system(size: 12.5, weight: .medium))
-                .lineLimit(1)
-                .padding(.horizontal, 11).padding(.vertical, 8)
-                .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
-                .opacity(0.7)
+            Button(action: openLevel) {
+                Text("練習 · \(Rules.difficulties[run.lv].name) ▾")
+                    .font(.system(size: 12.5, weight: .medium))
+                    .lineLimit(1)
+                    .padding(.horizontal, 11).padding(.vertical, 8)
+                    .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(!levelEnabled)
+            .accessibilityLabel("練習，難度「\(Rules.difficulties[run.lv].name)」，選擇難度")
+            .accessibilityIdentifier("topbar.level")
 
             Spacer(minLength: 0)
 

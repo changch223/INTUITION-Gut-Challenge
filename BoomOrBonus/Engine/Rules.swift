@@ -23,6 +23,29 @@ enum Rules {
     /// JavaScript Math.round for the values used here (floor(x + 0.5)).
     static func jsRound(_ x: Double) -> Double { (x + 0.5).rounded(.down) }
 
+    /// Overflow guard for very long endless runs (far beyond any real play): scores, deltas and
+    /// targets are clamped to 1e18 (< Int.max ~9.22e18). Nothing below that point changes.
+    static let SCORE_CAP = 1_000_000_000_000_000_000
+
+    /// Double -> Int without trapping: NaN -> 0, anything beyond +-SCORE_CAP is clamped.
+    static func clampScore(_ x: Double) -> Int {
+        if x.isNaN { return 0 }
+        if x >= Double(SCORE_CAP) { return SCORE_CAP }
+        if x <= -Double(SCORE_CAP) { return -SCORE_CAP }
+        return Int(x)
+    }
+
+    /// a + b, held at SCORE_CAP (stage score).
+    static func saturatingScore(_ a: Int, _ b: Int) -> Int {
+        min(saturatingAdd(a, b), SCORE_CAP)
+    }
+
+    /// a + b, held at Int.max / Int.min instead of trapping (run total).
+    static func saturatingAdd(_ a: Int, _ b: Int) -> Int {
+        let (r, overflow) = a.addingReportingOverflow(b)
+        return overflow ? (b > 0 ? Int.max : Int.min) : r
+    }
+
     static let bossStages6: [BossID] = [.fog, .shaky, .crush]
     static let bossStagesEndless: [BossID] = [.short, .fog, .shaky, .crush]
 
