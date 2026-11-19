@@ -4,6 +4,7 @@
 //
 //  SaveData (03-data-persistence.md §2) as one JSON file in Application Support.
 //  Phase 3 adds unlock and deepest (Phase 2: runs.free, lastLevel, muted, onboardingDone).
+//  Phase 4 adds runs.daily, daily[YYYYMMDD] (DailyRecord) and the mode the player was last in.
 //  Every field decodes with a default so later phases can add fields
 //  (daily, unlock, deepest, stats...) without invalidating existing saves.
 //
@@ -13,7 +14,7 @@ import Foundation
 struct SaveData: Codable, Equatable {
     struct Runs: Codable, Equatable {
         var free: RunState?
-        var daily: RunState?     // Phase 4
+        var daily: RunState?
 
         init(free: RunState? = nil, daily: RunState? = nil) {
             self.free = free
@@ -36,10 +37,12 @@ struct SaveData: Codable, Equatable {
     var deepest = 0          // endless: most stages cleared (marks > 0) in one run
     var muted = false
     var onboardingDone = false
+    var daily: [Int: DailyRecord] = [:]   // 03 §3, keyed by YYYYMMDD (stored as string keys in the JSON)
+    var mode: Mode?                       // the mode the player was last in; nil = never saved (new install)
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case runs, lastLevel, unlock, deepest, muted, onboardingDone }
+    private enum CodingKeys: String, CodingKey { case runs, lastLevel, unlock, deepest, muted, onboardingDone, daily, mode }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -49,6 +52,27 @@ struct SaveData: Codable, Equatable {
         deepest = max(0, try c.decodeIfPresent(Int.self, forKey: .deepest) ?? 0)
         muted = try c.decodeIfPresent(Bool.self, forKey: .muted) ?? false
         onboardingDone = try c.decodeIfPresent(Bool.self, forKey: .onboardingDone) ?? false
+        // One unreadable day must not take the others down: decode day by day, skip what does not parse.
+        let raw = (try? c.decodeIfPresent([String: LossyDaily].self, forKey: .daily)) ?? [:]
+        for (k, v) in raw { if let day = Int(k), let r = v.record { daily[day] = r } }
+        mode = (try? c.decodeIfPresent(Mode.self, forKey: .mode)) ?? nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runs, forKey: .runs)
+        try c.encode(lastLevel, forKey: .lastLevel)
+        try c.encode(unlock, forKey: .unlock)
+        try c.encode(deepest, forKey: .deepest)
+        try c.encode(muted, forKey: .muted)
+        try c.encode(onboardingDone, forKey: .onboardingDone)
+        try c.encode(Dictionary(uniqueKeysWithValues: daily.map { (String($0.key), $0.value) }), forKey: .daily)
+        try c.encodeIfPresent(mode, forKey: .mode)
+    }
+
+    private struct LossyDaily: Decodable {
+        let record: DailyRecord?
+        init(from decoder: Decoder) throws { record = try? DailyRecord(from: decoder) }
     }
 }
 
@@ -106,12 +130,15 @@ final class SaveStore {
     }
 
     /// 03 §2.1: same version, and phase is play or shop (shop re-opens the shop with the same shelf).
-    /// Free mode only (Phase 4 adds daily), so the day check does not apply.
-    func restorableFreeRun() -> RunState? {
-        guard let run = data.runs.free else { return nil }
-        guard run.version == Self.runVersion else { return nil }
+    func restorableFreeRun() -> RunState? { restorableRun(.free, today: 0) }
+
+    /// 03 §2.1 for either mode. A daily run also needs `day == today`: after midnight yesterday's run is void.
+    func restorableRun(_ mode: Mode, today: Int) -> RunState? {
+        guard let run = mode == .daily ? data.runs.daily : data.runs.free else { return nil }
+        guard run.mode == mode, run.version == Self.runVersion else { return nil }
         guard run.phase == .play || run.phase == .shop else { return nil }
         guard run.pair.count == 2 else { return nil }
+        if mode == .daily && run.day != today { return nil }
         return run
     }
 }

@@ -16,6 +16,8 @@
 //    -boomPair          the first pair is two bombs (to see shield / defuse / grit / crush)
 //    -shop              the stage is cleared: opens the shop (or the win result at stage 6)
 //    -fail              the stage is failed: opens the result sheet
+//    -daily             start in the daily challenge instead of free play (seed = today, lv 0, x1.3; -lv ignored)
+//    -today YYYYMMDD    fake "today" (also with -qaSave alone); see DayKey.debugToday
 //
 
 import Foundation
@@ -35,6 +37,7 @@ struct DebugHooks: Equatable {
     var boomPair = false
     var shop = false
     var fail = false
+    var daily = false
 
     static func parse(arguments: [String] = ProcessInfo.processInfo.arguments) -> DebugHooks {
         #if DEBUG
@@ -56,6 +59,7 @@ struct DebugHooks: Equatable {
         h.boomPair = arguments.contains("-boomPair")
         h.shop = arguments.contains("-shop")
         h.fail = arguments.contains("-fail")
+        h.daily = arguments.contains("-daily")
         if let i = arguments.firstIndex(of: "-blessings"), i + 1 < arguments.count {
             h.blessings = arguments[i + 1].split(separator: ",").compactMap { BlessingID(rawValue: String($0)) }
         }

@@ -32,7 +32,9 @@ struct DifficultySheet: View {
                 }
 
                 SheetBody(text: Text("右邊是模擬的全破率（看期望值選牌、會買祝福）。選了之後會開始新的一局。")
-                    + (inProgress ? Text("目前這局會放棄。") : Text(verbatim: "")))
+                    + (inProgress
+                        ? (currentLevel < 0 ? Text("自由練習進行中的那局會放棄，今日挑戰的局會保留。") : Text("目前這局會放棄。"))
+                        : Text(verbatim: "")))
             }
         } footer: {
             // Pinned outside the scroll area so the confirmation can never be clipped (iPhone SE).
@@ -91,7 +93,9 @@ struct DifficultySheet: View {
     /// Inline confirmation when a run is in progress.
     private func confirm(_ lv: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SheetBody(text: Text("放棄目前這局，開始難度「\(Rules.difficulties[lv].name)」？"))
+            SheetBody(text: currentLevel < 0
+                ? Text("放棄自由練習進行中的那局，開始難度「\(Rules.difficulties[lv].name)」？")
+                : Text("放棄目前這局，開始難度「\(Rules.difficulties[lv].name)」？"))
                 .fontWeight(.bold)
                 .accessibilityIdentifier("difficulty.confirmText")
             HStack(spacing: 8) {

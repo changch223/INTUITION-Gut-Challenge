@@ -2,8 +2,8 @@
 //  ResultSheet.swift
 //  BoomOrBonus
 //
-//  02-screens-ux.md §5.2 for free play: headline, total, stage marks, unlock note, blessings and the
-//  button matrix. Copy-result text (Phase 4) and the record-break note (Phase 6) are not here yet.
+//  02-screens-ux.md §5.2: headline, total, stage marks, unlock note, blessings, the copyable result text
+//  and the button matrix for both modes (daily rows added in Phase 4). The record-break note is Phase 6.
 //  Banner ads show on this sheet only (02 §12), mocked for now.
 //
 
@@ -13,7 +13,10 @@ struct ResultSheet: View {
     let run: RunState
     let unlock: Int
     let deepest: Int
+    var nextAttempt = 1          // 「再挑戰一次（第 N 次）」
     let actions: Actions
+
+    @State private var copied = false
 
     struct Actions {
         var sameDeck: () -> Void = {}
@@ -21,6 +24,8 @@ struct ResultSheet: View {
         var endless: () -> Void = {}
         var changeLevel: () -> Void = {}
         var playLevel: (Int) -> Void = { _ in }
+        var copy: () -> Void = {}
+        var free: () -> Void = {}
     }
 
     private static let tiers = ["直覺迷路了", "感覺不太靈", "普通水準", "小有靈感", "預感強到爆", "神準直覺", "歐皇現世"]
@@ -39,7 +44,8 @@ struct ResultSheet: View {
         } else {
             head = Text("止步第 \(run.stage) 關")
         }
-        return head + Text(" · ") + Text("難度「\(Rules.difficulties[run.lv].name)」")
+        return head + Text(" · ")
+            + (run.mode == .daily ? Text("今日挑戰第 \(run.attempt) 次") : Text("難度「\(Rules.difficulties[run.lv].name)」"))
     }
 
     private var title: String {
@@ -76,8 +82,22 @@ struct ResultSheet: View {
 
             SheetBody(text: blessingsText)
 
+            Text(verbatim: ShareText.make(run))
+                .font(.system(size: 13, design: .monospaced))
+                .foregroundStyle(Theme.sheetText)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(Theme.sheetButton.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityIdentifier("result.shareText")
+
             if run.phase == .win {
                 SheetBody(text: Text("可以帶著金幣、祝福和道具繼續打無盡關卡。無盡關卡沒有終點，每 2 關一個魔王，看能撐到第幾關。"))
+            }
+
+            if run.mode == .daily && run.phase != .win {
+                SheetBody(text: Text("同一副牌在同樣的位置會發同樣的牌，哪張會爆也一樣。記住這次翻到的結果，下次就能避開。今日挑戰可以無限重打，紀錄會寫你第幾次破關。"))
+                    .accessibilityIdentifier("result.dailyHint")
             }
 
             buttons
@@ -95,34 +115,71 @@ struct ResultSheet: View {
         return t
     }
 
-    // MARK: Buttons (02 §5.2, free play)
-    //   win:      [繼續無盡關卡]   [挑戰難度「下一級」 或 再來一局] [同一副牌再打]
-    //   not won:  [換難度] [再來一局]   [同一副牌再打 (primary)]
+    // MARK: Buttons (02 §5.2)
+    //   win:             [複製戰績] [繼續無盡關卡 (primary)]
+    //                    daily: [同一副牌再打] [去自由練習]   free: [挑戰難度「下一級」 或 再來一局] [同一副牌再打]
+    //   daily not won:   [複製戰績] [去自由練習]   [再挑戰一次（第 N 次）(primary)]
+    //   free not won:    [複製戰績] [換難度] [再來一局]   [同一副牌再打 (primary)]
+
+    private var copyButton: some View {
+        Button {
+            copied = true
+            actions.copy()
+        } label: { Text(copied ? "已複製" : "複製戰績") }
+            .buttonStyle(SheetButtonStyle())
+            .accessibilityIdentifier("result.copy")
+    }
+
+    private var freeButton: some View {
+        Button("去自由練習", action: actions.free)
+            .buttonStyle(SheetButtonStyle())
+            .accessibilityIdentifier("result.free")
+    }
 
     @ViewBuilder
     private var buttons: some View {
         if run.phase == .win {
-            Button("繼續無盡關卡", action: actions.endless)
-                .buttonStyle(SheetButtonStyle(primary: true))
-                .accessibilityIdentifier("result.endless")
-                .padding(.top, 4)
             HStack(spacing: 8) {
-                let next = run.lv + 1
-                if next < Rules.difficulties.count && next <= unlock {
-                    Button { actions.playLevel(next) } label: { Text("挑戰難度「\(Rules.difficulties[next].name)」") }
-                        .buttonStyle(SheetButtonStyle())
-                        .accessibilityIdentifier("result.nextLevel")
-                } else {
-                    Button("再來一局", action: actions.newRun)
-                        .buttonStyle(SheetButtonStyle())
-                        .accessibilityIdentifier("result.new")
-                }
-                Button("同一副牌再打", action: actions.sameDeck)
-                    .buttonStyle(SheetButtonStyle())
-                    .accessibilityIdentifier("result.retry")
+                copyButton
+                Button("繼續無盡關卡", action: actions.endless)
+                    .buttonStyle(SheetButtonStyle(primary: true))
+                    .accessibilityIdentifier("result.endless")
             }
+            .padding(.top, 4)
+            HStack(spacing: 8) {
+                if run.mode == .daily {
+                    Button("同一副牌再打", action: actions.sameDeck)
+                        .buttonStyle(SheetButtonStyle())
+                        .accessibilityIdentifier("result.retry")
+                    freeButton
+                } else {
+                    let next = run.lv + 1
+                    if next < Rules.difficulties.count && next <= unlock {
+                        Button { actions.playLevel(next) } label: { Text("挑戰難度「\(Rules.difficulties[next].name)」") }
+                            .buttonStyle(SheetButtonStyle())
+                            .accessibilityIdentifier("result.nextLevel")
+                    } else {
+                        Button("再來一局", action: actions.newRun)
+                            .buttonStyle(SheetButtonStyle())
+                            .accessibilityIdentifier("result.new")
+                    }
+                    Button("同一副牌再打", action: actions.sameDeck)
+                        .buttonStyle(SheetButtonStyle())
+                        .accessibilityIdentifier("result.retry")
+                }
+            }
+        } else if run.mode == .daily {
+            HStack(spacing: 8) {
+                copyButton
+                freeButton
+            }
+            .padding(.top, 4)
+            Button { actions.sameDeck() } label: { Text("再挑戰一次（第 \(nextAttempt) 次）") }
+                .buttonStyle(SheetButtonStyle(primary: true))
+                .accessibilityIdentifier("result.retry")
         } else {
             HStack(spacing: 8) {
+                copyButton
                 Button("換難度", action: actions.changeLevel)
                     .buttonStyle(SheetButtonStyle())
                     .accessibilityIdentifier("result.changeLevel")

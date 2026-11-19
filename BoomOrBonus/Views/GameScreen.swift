@@ -12,6 +12,7 @@ struct GameScreen: View {
     @State private var vm: GameViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         _vm = State(initialValue: GameViewModel.live)
@@ -30,17 +31,45 @@ struct GameScreen: View {
                     .transition(.opacity)
                     .accessibilityHidden(true)
                 VStack(spacing: 0) {
-                    Spacer(minLength: 40)
+                    Spacer(minLength: 58)          // room for the mode switch above the scrim
                     sheetContent
                 }
                 .transition(reduceMotion ? .opacity : .move(edge: .bottom))
                 .accessibilityAddTraits(.isModal)
             }
 
+            // 02 §11: the mode switch lives outside the sheets (prototype tabs), so it stays usable above the scrim.
+            // It is only blocked while a pick or clear animation runs, or the mock ad plays.
+            VStack(spacing: 0) {
+                ModeSwitch(mode: vm.mode, enabled: vm.canSwitchMode, select: { vm.switchMode($0) })
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                Spacer(minLength: 0)
+            }
+
             if vm.adPlaying {
                 AdMockView(duration: vm.adDuration)
                     .transition(.opacity)
             }
+
+            // The copy confirmation must be readable above the dimmed game.
+            if let toast = vm.toast, toast.overSheet, vm.sheet != nil {
+                VStack {
+                    ToastView(text: toast.text)
+                        .padding(.top, 6)
+                        .id(toast.id)
+                        .transition(.opacity)
+                    Spacer()
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            // Midnight, or the clock / time zone changed while the app stays in the foreground.
+            vm.refreshDay()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // 03 §2.1: back from the background after midnight, yesterday's daily run is void.
+            if phase == .active { vm.refreshDay() }
         }
         .animation(.easeOut(duration: 0.22), value: vm.toast)
         .animation(reduceMotion ? .easeOut(duration: 0.15) : .timingCurve(0.2, 0.9, 0.25, 1, duration: 0.32), value: vm.sheet)
@@ -58,7 +87,7 @@ struct GameScreen: View {
     /// Over the goal line and progress bar: never on the rule banner, the cards or the bank button.
     @ViewBuilder
     private var toastView: some View {
-        if let toast = vm.toast {
+        if let toast = vm.toast, !toast.overSheet {
             ToastView(text: toast.text)
                 .padding(.bottom, 2)
                 .transition(.opacity.combined(with: reduceMotion ? .identity : .offset(y: -10)))
@@ -70,7 +99,9 @@ struct GameScreen: View {
 
     private var game: some View {
         VStack(spacing: 10) {
-            TopBar(run: vm.run, levelEnabled: vm.canInteract, openLevel: { vm.openDifficulty() })
+            Color.clear.frame(height: ModeSwitch.height)       // the switch itself is drawn above the scrim
+            TopBar(run: vm.run, levelEnabled: vm.canInteract, openLevel: { vm.openDifficulty() },
+                   menuEnabled: vm.canInteract, openMenu: { vm.openMenu() })
             RuleBanner(boss: vm.boss, mod: vm.mod)
             ScorePanel(value: vm.run.value, target: vm.target, stretch: vm.stretch, isFirstPick: vm.isFirstPick)
                 .overlay(alignment: .bottom) { toastView }
@@ -145,18 +176,26 @@ struct GameScreen: View {
         case .shop:
             ShopSheet(vm: vm)
         case .difficulty:
-            DifficultySheet(currentLevel: vm.run.lv,
+            DifficultySheet(currentLevel: vm.mode == .free ? vm.run.lv : -1,
                             unlock: vm.unlock,
-                            inProgress: vm.runInProgress,
+                            inProgress: vm.difficultyReplacesRun,
                             pick: { vm.startLevel($0) },
                             cancel: { vm.closeDifficulty() })
         case .result:
             ResultSheet(run: vm.run, unlock: vm.unlock, deepest: vm.deepest,
+                        nextAttempt: vm.nextDailyAttempt,
                         actions: .init(sameDeck: { vm.retrySameDeck() },
                                        newRun: { vm.startNewRun() },
                                        endless: { vm.startEndless() },
                                        changeLevel: { vm.openDifficulty() },
-                                       playLevel: { vm.startLevel($0) }))
+                                       playLevel: { vm.startLevel($0) },
+                                       copy: { vm.copyResult() },
+                                       free: { vm.switchMode(.free) }))
+        case .menu:
+            MenuSheet(mode: vm.mode, attempt: vm.run.attempt, muted: vm.muted,
+                      toggleMute: { vm.toggleMute() },
+                      abandon: { vm.abandon() },
+                      close: { vm.closeMenu() })
         case nil:
             EmptyView()
         }

@@ -59,11 +59,14 @@ final class GameViewModel {
         case shop
         case difficulty
         case result
+        case menu          // the ? button; Phase 5 adds the rules sheet here
     }
 
     struct Toast: Equatable, Identifiable {
         let id: Int
         let text: String
+        /// Drawn above the sheet scrim (the copy confirmation on the result sheet); other toasts sit on the game.
+        var overSheet = false
     }
 
     // MARK: - State
@@ -82,6 +85,7 @@ final class GameViewModel {
     private(set) var unlock = 0
     private(set) var lastLevel = 0
     private(set) var deepest = 0
+    private(set) var muted = false
     /// Where 「取消」 in the difficulty sheet goes back to (the result sheet, or nothing).
     private(set) var difficultyReturn: Sheet?
 
@@ -105,15 +109,21 @@ final class GameViewModel {
     @ObservationIgnored private let feedbackEnabled: Bool
     @ObservationIgnored private let randomSeed: () -> UInt32
     @ObservationIgnored private let hooks: DebugHooks
+    @ObservationIgnored private let clock: DayKey.Provider
 
     // MARK: - Setup
 
     /// One shared instance for the app, so a re-created GameScreen never re-runs init side effects.
-    static let live = GameViewModel(store: .shared, launchSeed: debugLaunchSeed(), hooks: DebugHooks.parse())
+    /// A new install starts in the daily challenge (prototype `load('daily')`); after that the last mode is kept.
+    static let live = GameViewModel(
+        store: .shared, launchSeed: debugLaunchSeed(), hooks: DebugHooks.parse(),
+        today: DayKey.debugToday().map { fake in { fake } } ?? { DayKey.today() }, defaultMode: .daily)
 
     /// - Parameter launchSeed: starts a new free run with this seed and ignores any save (QA hook).
     ///   It also resets unlock / lastLevel / deepest so every launch starts from the same state.
     /// - Parameter hooks: Debug-only launch arguments (`-stage`, `-blessings`, ...), only used with `launchSeed`.
+    /// - Parameter today: the date provider (`YYYYMMDD`, local time); tests and `-today` replace it.
+    /// - Parameter defaultMode: the mode when the save has none yet (the app passes `.daily`).
     init(
         store: SaveStore,
         launchSeed: UInt32? = nil,
@@ -124,7 +134,9 @@ final class GameViewModel {
         },
         reduceMotion: (@MainActor () -> Bool)? = nil,
         feedbackEnabled: Bool = true,
-        randomSeed: @escaping () -> UInt32 = { UInt32.random(in: 0..<2147483647) }
+        randomSeed: @escaping () -> UInt32 = { UInt32.random(in: 0..<2147483647) },
+        today: @escaping DayKey.Provider = { DayKey.today() },
+        defaultMode: Mode = .free
     ) {
         self.store = store
         self.timing = timing
@@ -133,6 +145,7 @@ final class GameViewModel {
         self.feedbackEnabled = feedbackEnabled
         self.randomSeed = randomSeed
         self.hooks = hooks
+        self.clock = today
         if feedbackEnabled { self.sound = SoundPlayer(isMuted: { [store] in store.data.muted }) }
 
         var needsSave = false
@@ -143,34 +156,51 @@ final class GameViewModel {
                 $0.lastLevel = 0
                 $0.deepest = 0
             }
-            var r = Self.freshRun(seed: launchSeed, lv: hooks.lv ?? 0)
+            let day = today()
+            var r = Self.makeRun(mode: hooks.daily ? .daily : .free, seed: launchSeed, lv: hooks.lv ?? 0,
+                                 data: store.data, day: day, randomSeed: randomSeed)
             hooks.apply(to: &r)
             initial = r
             needsSave = true
-        } else if let restored = store.restorableFreeRun() {
-            initial = restored
         } else {
-            initial = Self.freshRun(seed: randomSeed(), lv: Self.startLevel(store.data))
-            needsSave = true
+            // 03 §2.1: yesterday's unfinished daily run is void (and is not an attempt).
+            let day = today()
+            Self.discardStaleDaily(store, today: day)
+            let mode = store.data.mode ?? defaultMode
+            if var restored = store.restorableRun(mode, today: day) {
+                if restored.day == 0 { restored.day = day }     // saved before runs carried a day
+                initial = restored
+            } else {
+                initial = Self.makeRun(mode: mode, seed: nil, lv: nil, data: store.data, day: day, randomSeed: randomSeed)
+                needsSave = true
+            }
         }
         self.run = initial
         self.faces = makeFaces()
         syncFromStore()
+        if resumeRun() { needsSave = true }
+        if needsSave { save() }
+    }
 
-        // Resume where the player left off.
+    /// Opens whatever the current run was waiting for (shop, result, a stage that ended). True when `run` changed.
+    private func resumeRun() -> Bool {
+        var changed = false
         switch run.phase {
         case .shop:
             // 03 §2.1: reopen the shop; the same shelf comes back from the save.
-            if run.shopOffer.isEmpty { run.shopOffer = Shop.shopOffer(run); needsSave = true }
+            if run.shopOffer.isEmpty { run.shopOffer = Shop.shopOffer(run); changed = true }
             isLocked = true
             sheet = .shop
         case .win:
             // Only reachable through the debug hooks (a saved win is not restored).
             settleClear()
-            needsSave = true
+            finishRun()
+            changed = true
             isLocked = true
             sheet = .result
         case .over:
+            finishRun()
+            changed = true
             isLocked = true
             sheet = .result
         case .play:
@@ -180,7 +210,7 @@ final class GameViewModel {
                 flowTask = Task { await self.resolveStageEnd() }
             }
         }
-        if needsSave { save() }
+        return changed
     }
 
     /// 03 §2.2: a new free run starts at min(lastLevel, unlock).
@@ -190,6 +220,7 @@ final class GameViewModel {
         unlock = store.data.unlock
         lastLevel = store.data.lastLevel
         deepest = store.data.deepest
+        muted = store.data.muted
     }
 
     /// `-seed <UInt32>` on the command line (Debug builds only).
@@ -202,9 +233,34 @@ final class GameViewModel {
         #endif
     }
 
-    private static func freshRun(seed: UInt32, lv: Int) -> RunState {
-        GameEngine.newRun(seed: seed, lv: lv, mode: .free)
+    /// 03 §2.2. Daily: `seed = day`, lv 0, x1.3, `attempt = tries + 1`. Free: the given or a random seed at the
+    /// given or the remembered level. Every run carries the day it started on.
+    private static func makeRun(
+        mode: Mode, seed: UInt32?, lv: Int?, data: SaveData, day: Int, randomSeed: () -> UInt32
+    ) -> RunState {
+        var r: RunState
+        switch mode {
+        case .daily:
+            r = GameEngine.newRun(seed: UInt32(truncatingIfNeeded: day), lv: 0, mode: .daily, targetMul: Rules.DAILY_TM)
+            r.attempt = (data.daily[day]?.tries ?? 0) + 1
+        case .free:
+            r = GameEngine.newRun(seed: seed ?? randomSeed(), lv: lv ?? startLevel(data), mode: .free)
+        }
+        r.day = day
+        return r
     }
+
+    /// 03 §2.1: an unfinished daily run from an earlier day is dropped from the save. Not an attempt.
+    private static func discardStaleDaily(_ store: SaveStore, today: Int) {
+        guard let d = store.data.runs.daily, d.day != today, d.phase == .play || d.phase == .shop else { return }
+        store.update { $0.runs.daily = nil }
+    }
+
+    var mode: Mode { run.mode }
+    var today: Int { clock() }
+
+    /// The attempt number the next daily run will get (the result sheet's 「再挑戰一次（第 N 次）」).
+    var nextDailyAttempt: Int { (store.data.daily[today]?.tries ?? 0) + 1 }
 
     // MARK: - Derived
 
@@ -229,6 +285,7 @@ final class GameViewModel {
     // MARK: - Pick flow
 
     func pick(_ i: Int) {
+        if refreshDay() { return }
         guard canInteract, run.pair.count == 2, run.pair.indices.contains(i), faces.count == 2 else { return }
         isLocked = true            // synchronous: a second tap in the same run loop sees this
         pickedIndex = i
@@ -336,7 +393,7 @@ final class GameViewModel {
                 sheet = .fail
             } else {
                 GameEngine.failStage(&run)
-                save()
+                finishRun()
                 sheet = .result
             }
         }
@@ -344,6 +401,7 @@ final class GameViewModel {
 
     /// The bank button.
     func bank() {
+        if refreshDay() { return }
         guard canInteract, GameEngine.canClear(run) else { return }
         isLocked = true
         flowTask = Task { await self.performClear() }
@@ -359,7 +417,7 @@ final class GameViewModel {
         settleClear()
         playSound("ButtonSuccess")
         haptic { HapticManager.shared.playSuccess() }
-        save()
+        if run.phase == .win { finishRun() } else { save() }
         let win = run.phase == .win
         await sleeper(win ? timing.winToSheet : timing.clearToSheet)
         guard !Task.isCancelled else { return }
@@ -455,6 +513,7 @@ final class GameViewModel {
 
     /// 「前往第 N 關」
     func nextStage() {
+        if refreshDay() { return }
         guard inShop else { return }
         GameEngine.nextStage(&run)
         run.shopOffer = []
@@ -495,14 +554,16 @@ final class GameViewModel {
 
     /// 「結束這局」
     func endRun() {
+        if refreshDay() { return }
         guard sheet == .fail, run.phase == .play else { return }
         GameEngine.failStage(&run)
-        save()
+        finishRun()
         sheet = .result
     }
 
     /// 「看廣告，多 2 手」: mocked ad, callback after 2.5s, once per run.
     func watchAd() {
+        if refreshDay() { return }
         guard sheet == .fail, run.phase == .play, !run.adUsed, !adPlaying else { return }
         sheet = nil
         adPlaying = true
@@ -520,29 +581,46 @@ final class GameViewModel {
 
     // MARK: - New run
 
-    /// 「再來一局」: a new random deck at the difficulty just played.
+    /// 「再來一局」: a new random deck at the difficulty just played (free play).
     func startNewRun() {
         guard sheet == .result else { return }
-        begin(seed: randomSeed(), lv: run.lv)
+        if run.mode == .daily { retrySameDeck(); return }
+        begin(.free, seed: randomSeed(), lv: run.lv)
     }
 
-    /// 「同一副牌再打」: same seed and difficulty, so every pair is dealt again identically.
+    /// 「同一副牌再打」 / 「再挑戰一次」: free play deals the same seed and difficulty again;
+    /// the daily challenge starts the next attempt on today's deck (`attempt = tries + 1`).
     func retrySameDeck() {
         guard sheet == .result else { return }
-        begin(seed: run.seed, lv: run.lv)
+        if run.mode == .daily { begin(.daily) } else { begin(.free, seed: run.seed, lv: run.lv) }
     }
 
     /// A level in the difficulty sheet (also 「挑戰難度「X」」 on the win result): new free run, remembered in `lastLevel`.
+    /// The new run is always free play: the difficulty does not apply to the daily challenge.
     func startLevel(_ lv: Int) {
-        guard sheet == .difficulty || sheet == .result,
+        // From the daily challenge (chip -> sheet) this starts a free run and leaves the daily run saved as it is.
+        guard (sheet == .difficulty) || (sheet == .result && run.mode == .free),
               (0...Rules.difficulties.count - 1).contains(lv), lv <= unlock else { return }
         store.update { $0.lastLevel = lv }
         syncFromStore()
-        begin(seed: randomSeed(), lv: lv)
+        save()
+        begin(.free, seed: randomSeed(), lv: lv)
         showToast(String(localized: "自由練習 · 難度「\(Rules.difficulties[lv].name)」"), seconds: 2)
     }
 
-    private func begin(seed: UInt32, lv: Int) {
+    /// Replaces the current run with a new one of `mode` (the old run is not saved: callers decide what it was).
+    private func begin(_ mode: Mode, seed: UInt32? = nil, lv: Int? = nil) {
+        cancelFlows()
+        let day = today
+        Self.discardStaleDaily(store, today: day)
+        run = Self.makeRun(mode: mode, seed: seed, lv: lv, data: store.data, day: day, randomSeed: randomSeed)
+        save()
+        dealFaces()
+        isLocked = false
+        playSound("start")
+    }
+
+    private func cancelFlows() {
         flowTask?.cancel()
         flowTask = nil
         shopLockTask?.cancel()
@@ -550,11 +628,117 @@ final class GameViewModel {
         adPlaying = false
         sheet = nil
         difficultyReturn = nil
-        run = Self.freshRun(seed: seed, lv: lv)
-        save()
-        dealFaces()
+    }
+
+    // MARK: - Modes (02 §11)
+
+    /// Both modes keep their own run in the save (`runs.daily` / `runs.free`). Switching is not an attempt.
+    /// Blocked only while a pick / clear animation runs (locked with no sheet up) or the mock ad plays.
+    /// With a sheet open the run is idle, so switching is fine: the run is saved and comes back with its sheet.
+    var canSwitchMode: Bool { !adPlaying && !(isLocked && sheet == nil) }
+
+    func switchMode(_ new: Mode) {
+        guard new != run.mode, canSwitchMode else { return }
+        save()                                           // the run being left stays exactly as it is
+        cancelFlows()
+        let day = today
+        Self.discardStaleDaily(store, today: day)
         isLocked = false
-        playSound("start")
+        pickedIndex = nil
+        reveal = nil
+        if var restored = store.restorableRun(new, today: day) {
+            if restored.day == 0 { restored.day = day }
+            run = restored
+        } else {
+            run = Self.makeRun(mode: new, seed: nil, lv: nil, data: store.data, day: day, randomSeed: randomSeed)
+        }
+        faces = makeFaces()
+        dealID += 1
+        _ = resumeRun()
+        save()
+        playSound("Click")
+    }
+
+    /// Launch (init), foreground and run start all go through here: an unfinished daily run from an earlier day
+    /// is discarded without counting as an attempt, and replaced by today's attempt when it is on screen.
+    /// Also called when the app sees a significant time change (midnight, clock or time zone) and at the top of
+    /// every action that could end or advance a run, so a run left open past midnight never counts against
+    /// yesterday. Returns true when the run was replaced (the caller's action no longer applies).
+    @discardableResult
+    func refreshDay() -> Bool {
+        let t = today
+        Self.discardStaleDaily(store, today: t)
+        guard run.mode == .daily, run.day != t, run.phase == .play || run.phase == .shop else { return false }
+        begin(.daily)
+        showToast(String(localized: "新的一天，今日挑戰第 \(run.attempt) 次"), seconds: 2.4)
+        return true
+    }
+
+    /// 「複製戰績」: the share text (ShareText) goes to the system pasteboard.
+    func copyResult() {
+        guard sheet == .result else { return }
+        UIPasteboard.general.string = ShareText.make(run)
+        playSound("Click")
+        showToast(String(localized: "已複製戰績"), overSheet: true)
+    }
+
+    // MARK: - ? menu (Phase 5 adds the rules sheet here)
+
+    func openMenu() {
+        if refreshDay() { return }
+        guard sheet == nil, canInteract else { return }
+        sheet = .menu
+    }
+
+    func closeMenu() {
+        guard sheet == .menu else { return }
+        sheet = nil
+    }
+
+    func toggleMute() {
+        guard sheet == .menu else { return }
+        store.update { $0.muted.toggle() }
+        syncFromStore()
+        if !muted { playSound("Click") }
+    }
+
+    /// 「放棄（算一次）」 / 「放棄這局」. Daily: ends the run as a failed attempt (even with no pick made),
+    /// counts one try and starts the next attempt. Free: ends the run (only if it had started) and deals a new one.
+    func abandon() {
+        if refreshDay() { return }
+        guard run.phase == .play, !isLocked, !adPlaying, sheet == nil || sheet == .menu else { return }
+        let mode = run.mode, lv = run.lv
+        if mode == .daily || runInProgress {
+            GameEngine.failStage(&run)
+            run.abandoned = true
+            finishRun()
+        }
+        if mode == .daily {
+            begin(.daily)
+            showToast(String(localized: "已放棄，開始第 \(run.attempt) 次挑戰"), seconds: 2)
+        } else {
+            begin(.free, seed: randomSeed(), lv: lv)
+            showToast(String(localized: "已放棄這局，換一副新牌"), seconds: 2)
+        }
+    }
+
+    /// A run ended (cleared all six stages, out of picks for good, or abandoned). Daily runs update the day's
+    /// DailyRecord here, together with the run itself in one write. Calling it again for the same run (endless
+    /// ending after a clear) only refreshes total and marks.
+    /// Phase 6 adds `statsCounted`, the stats and the personal records here.
+    private func finishRun() {
+        if run.mode == .daily {
+            var record = store.data.daily[run.day] ?? DailyRecord()
+            record.finish(&run)
+            let day = run.day, snapshot = run
+            store.update {
+                $0.daily[day] = record
+                $0.runs.daily = snapshot
+                $0.mode = .daily
+            }
+        } else {
+            save()
+        }
     }
 
     // MARK: - Difficulty sheet (02 §9)
@@ -562,6 +746,14 @@ final class GameViewModel {
     /// A free run that has started: leaving it counts as abandoning it.
     var runInProgress: Bool {
         run.phase == .play && (run.stage > 1 || run.picks < run.stagePicksAtStart)
+    }
+
+    /// Picking a level replaces the saved free run. In daily mode that is the free run waiting in the save;
+    /// either way it is only a warning in the sheet, not an abandon (prototype `startFree`).
+    var difficultyReplacesRun: Bool {
+        if run.mode == .free { return runInProgress }
+        guard let free = store.restorableRun(.free, today: 0) else { return false }
+        return free.stage > 1 || free.picks < free.stagePicksAtStart
     }
 
     /// From the top-bar chip (main screen) or 「換難度」 (result sheet).
@@ -642,9 +834,9 @@ final class GameViewModel {
 
     // MARK: - Toast
 
-    func showToast(_ text: String, seconds: Double? = nil) {
+    func showToast(_ text: String, seconds: Double? = nil, overSheet: Bool = false) {
         toastCounter += 1
-        let t = Toast(id: toastCounter, text: text)
+        let t = Toast(id: toastCounter, text: text, overSheet: overSheet)
         toast = t
         toastTask?.cancel()
         toastTask = Task {
@@ -657,7 +849,10 @@ final class GameViewModel {
 
     private func save() {
         let snapshot = run
-        store.update { $0.runs.free = snapshot }
+        store.update {
+            if snapshot.mode == .daily { $0.runs.daily = snapshot } else { $0.runs.free = snapshot }
+            $0.mode = snapshot.mode
+        }
     }
 
     private func playSound(_ name: String) {

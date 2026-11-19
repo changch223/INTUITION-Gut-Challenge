@@ -4,7 +4,8 @@
 //
 //  Drives the main screen, shop, difficulty sheet and result sheet with the Debug launch hook
 //  `-seed 20261116` (also suppresses the AppOpenAd) and `-noAds`. `-seed` uses save-qa.json (wiped at launch),
-//  never the real save; `-qaSave` relaunches from that file. Extra hooks (`-stage`, `-shop`, ...)
+//  never the real save; `-qaSave` relaunches from that file. `-today 20261116` fixes the date so the daily
+//  challenge does not depend on the clock. Extra hooks (`-stage`, `-shop`, `-daily`, ...)
 //  are listed in Game/DebugHooks.swift.
 //
 
@@ -18,9 +19,9 @@ final class GameFlowUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    private func launch(extra: [String] = []) -> XCUIApplication {
+    private func launch(seed: String = "20261116", extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-seed", "20261116", "-noAds"] + extra
+        app.launchArguments = ["-seed", seed, "-noAds", "-today", "20261116"] + extra
         app.launch()
         return app
     }
@@ -203,7 +204,7 @@ final class GameFlowUITests: XCTestCase {
         app.terminate()
 
         let again = XCUIApplication()
-        again.launchArguments = ["-qaSave", "-noAds"]
+        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
         again.launch()
         XCTAssertTrue(again.buttons["shop.next"].waitForExistence(timeout: 10), "shop reopens")
         XCTAssertEqual((0..<3).map { again.buttons["shop.blessing.\($0)"].label }, slots, "same shelf")
@@ -400,5 +401,260 @@ final class GameFlowUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["score"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["picks"].exists)
+    }
+
+    // MARK: - Daily challenge (Phase 4)
+
+    private func chipLabel(_ app: XCUIApplication) -> String {
+        app.descendants(matching: .any)["topbar.day"].label
+    }
+
+    private func cardState(_ app: XCUIApplication) -> [String] {
+        [app.buttons["card.0"].label, app.buttons["card.1"].label,
+         app.descendants(matching: .any)["picks"].label]
+    }
+
+    private func screenshot(_ app: XCUIApplication, _ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// Plays on (higher danger first, through shops) until the out-of-picks panel shows.
+    private func playUntilFailSheet(_ app: XCUIApplication) {
+        var n = 0
+        while !app.buttons["fail.end"].exists, n < 150 {
+            n += 1
+            if app.buttons["shop.next"].exists { app.buttons["shop.next"].tap(); continue }
+            if app.buttons["result.retry"].exists { return }
+            let d0 = danger(of: app.buttons["card.0"].label)
+            let d1 = danger(of: app.buttons["card.1"].label)
+            _ = pick(app, d1 > d0 ? 1 : 0)
+            _ = app.buttons["fail.end"].waitForExistence(timeout: 0.3)
+        }
+    }
+
+    /// Taps ? and waits for the menu. A tap swallowed right after launch is recorded (not hidden) and retried once.
+    private func openMenu(_ app: XCUIApplication) {
+        app.buttons["topbar.menu"].tap()
+        if !app.buttons["menu.close"].waitForExistence(timeout: 2) {
+            lostTaps += 1
+            print("LOST TAP on topbar.menu hittable=\(app.buttons["topbar.menu"].isHittable)")
+            app.buttons["topbar.menu"].tap()
+        }
+        XCTAssertTrue(app.buttons["menu.close"].waitForExistence(timeout: 3), "menu opens")
+    }
+
+    func testSwitchToDailyAndBackKeepsBothRuns() throws {
+        // A free seed other than today's date, or both modes would deal the same deck.
+        let app = launch(seed: "4242")
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["mode.free"].isSelected)
+        XCTAssertTrue(app.buttons["topbar.level"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["topbar.day"].exists)
+
+        let freeStart = cardState(app)
+        XCTAssertTrue(pick(app, 0))                       // one pick in free play (a shield may keep the hand count)
+        let free = cardState(app)
+        XCTAssertNotEqual(free, freeStart)
+
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["mode.daily"].isSelected)
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
+        XCTAssertFalse(app.buttons["topbar.level"].exists, "difficulty is free play only")
+        let freshDaily = cardState(app)
+        XCTAssertTrue(freshDaily[2].contains("剩 7 手"), freshDaily[2])
+        screenshot(app, "daily-main")
+
+        XCTAssertTrue(pick(app, 1))
+        let daily = cardState(app)
+        XCTAssertNotEqual(daily, freshDaily)
+        XCTAssertNotEqual(daily, free)
+
+        app.buttons["mode.free"].tap()
+        XCTAssertTrue(app.buttons["topbar.level"].waitForExistence(timeout: 3))
+        XCTAssertEqual(cardState(app), free, "free run is where it was left")
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertEqual(cardState(app), daily, "daily run is where it was left")
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次", "switching is not an attempt")
+    }
+
+    func testDailyAbandonAdvancesAttemptThenFailResultCanBeCopied() throws {
+        let app = launch(extra: ["-daily"])
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10))
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
+
+        openMenu(app)
+        XCTAssertEqual(app.buttons["menu.abandon"].label, "放棄（算一次）")
+        XCTAssertTrue(app.buttons["menu.mute"].exists)
+        app.buttons["menu.abandon"].tap()
+        // The confirmation is inside the sheet (no system alert) and fully on screen.
+        XCTAssertTrue(app.descendants(matching: .any)["menu.confirmText"].waitForExistence(timeout: 2))
+        let window = app.windows.firstMatch.frame
+        for id in ["menu.abandonCancel", "menu.abandonConfirm"] {
+            XCTAssertTrue(app.buttons[id].isHittable, id)
+            XCTAssertTrue(window.contains(app.buttons[id].frame), id)
+        }
+        screenshot(app, "menu-abandon-confirm")
+        app.buttons["menu.abandonCancel"].tap()
+        XCTAssertTrue(app.buttons["menu.abandon"].exists, "cancel goes back to the menu")
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
+        app.buttons["menu.abandon"].tap()
+        app.buttons["menu.abandonConfirm"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["menu.abandon"].exists)
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 2 次", "abandoning, even with no pick made, counts")
+
+        // Play attempt 2 to the end: the result sheet says so, explains the daily rule and copies.
+        playUntilFailSheet(app)
+        XCTAssertTrue(app.buttons["fail.end"].waitForExistence(timeout: 5))
+        app.buttons["fail.end"].tap()
+        XCTAssertTrue(app.buttons["result.retry"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["result.dailyHint"].exists)
+        XCTAssertTrue(app.buttons["result.copy"].exists)
+        XCTAssertTrue(app.buttons["result.free"].exists)
+        XCTAssertEqual(app.buttons["result.retry"].label, "再挑戰一次（第 3 次）")
+        let share = app.descendants(matching: .any)["result.shareText"].label
+        XCTAssertTrue(share.hasPrefix("INTUITION++ 11/16 今日挑戰\n第 2 次挑戰，止步第 "), share)
+        XCTAssertTrue(share.contains("🟥"), share)
+        screenshot(app, "daily-fail-result")
+        app.buttons["result.copy"].tap()
+        XCTAssertTrue(app.staticTexts["toast"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts["toast"].label, "已複製戰績")
+        XCTAssertEqual(app.buttons["result.copy"].label, "已複製")
+        app.buttons["result.retry"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 3 次")
+        XCTAssertLessThanOrEqual(lostTaps, 1)
+    }
+
+    func testDailyWinResult() throws {
+        let app = launch(extra: ["-daily", "-stage", "6", "-shop"])
+        XCTAssertTrue(app.buttons["result.endless"].waitForExistence(timeout: 10))
+        for id in ["result.copy", "result.retry", "result.free"] {
+            XCTAssertTrue(app.buttons[id].isHittable, id)
+        }
+        XCTAssertFalse(app.descendants(matching: .any)["result.dailyHint"].exists, "the explanation is for a fail")
+        XCTAssertTrue(app.descendants(matching: .any)["result.shareText"].label
+            .hasPrefix("INTUITION++ 11/16 今日挑戰\n第 1 次挑戰破關 · 總分 "))
+        screenshot(app, "daily-win-result")
+        app.buttons["result.free"].tap()
+        XCTAssertTrue(app.buttons["topbar.level"].waitForExistence(timeout: 3), "去自由練習")
+        XCTAssertTrue(app.buttons["mode.free"].isSelected)
+    }
+
+    func testMuteToggleInMenu() throws {
+        let app = launch()
+        openMenu(app)
+        XCTAssertEqual(app.buttons["menu.mute"].label, "關閉音效")
+        XCTAssertEqual(app.buttons["menu.abandon"].label, "放棄重來", "free play wording")
+        app.buttons["menu.mute"].tap()
+        XCTAssertEqual(app.buttons["menu.mute"].label, "開啟音效")
+        app.buttons["menu.close"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertLessThanOrEqual(lostTaps, 1)
+    }
+
+    /// Kill and relaunch (`-qaSave`, no `-seed`): the daily run comes back in daily mode, same day.
+    func testDailyRunResumesAfterRelaunchAndMidnightStartsANewDay() throws {
+        let app = launch()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertTrue(pick(app, 0))
+        let daily = cardState(app)
+        app.terminate()
+
+        let again = XCUIApplication()
+        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launch()
+        XCTAssertTrue(again.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10), "opens in daily mode")
+        XCTAssertTrue(again.buttons["mode.daily"].isSelected)
+        XCTAssertEqual(cardState(again), daily, "same run, same pair, same picks left")
+        XCTAssertEqual(again.descendants(matching: .any)["topbar.day"].label, "今日挑戰，11/16，第 1 次")
+        again.terminate()
+
+        // After midnight yesterday's unfinished run is void, and it is not an attempt: still attempt 1.
+        let next = XCUIApplication()
+        next.launchArguments = ["-qaSave", "-noAds", "-today", "20261117"]
+        next.launch()
+        XCTAssertTrue(next.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10))
+        XCTAssertEqual(next.descendants(matching: .any)["topbar.day"].label, "今日挑戰，11/17，第 1 次")
+        XCTAssertTrue(next.descendants(matching: .any)["picks"].label.contains("剩 7 手"))
+        next.terminate()
+
+        // And going back to the 16th: that day was never counted, so the next attempt there is still 1.
+        let back = XCUIApplication()
+        back.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        back.launch()
+        XCTAssertTrue(back.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10))
+        XCTAssertEqual(back.descendants(matching: .any)["topbar.day"].label, "今日挑戰，11/16，第 1 次")
+    }
+
+    /// 02 §11: the switch sits above the scrim, so it works with a sheet open; the shop is still there on return.
+    func testModeSwitchWorksWithTheShopOpenAndTheShopComesBack() throws {
+        let app = launch(seed: "4242", extra: ["-shop", "-coins", "10"])
+        XCTAssertTrue(app.buttons["shop.next"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["mode.daily"].isHittable, "switch is above the scrim")
+        let title = app.descendants(matching: .any)["shop.title"].label
+        let slots = (0..<3).map { app.buttons["shop.blessing.\($0)"].label }
+        screenshot(app, "shop-with-mode-switch")
+
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["shop.next"].exists, "the daily run has no shop open")
+        XCTAssertTrue(app.buttons["card.0"].exists)
+
+        app.buttons["mode.free"].tap()
+        XCTAssertTrue(app.buttons["shop.next"].waitForExistence(timeout: 3), "the free-play shop is restored")
+        XCTAssertEqual(app.descendants(matching: .any)["shop.title"].label, title)
+        XCTAssertEqual((0..<3).map { app.buttons["shop.blessing.\($0)"].label }, slots, "same shelf")
+    }
+
+    func testFreePlayResultCanReachDailyThroughTheSwitch() throws {
+        let app = launch(seed: "4242", extra: ["-stage", "3", "-fail"])
+        XCTAssertTrue(app.buttons["result.retry"].waitForExistence(timeout: 10))
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["result.retry"].exists)
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
+    }
+
+    /// 02 §2.1 / §9: the daily chip opens the difficulty sheet; a level starts free play, the daily run stays.
+    func testDailyChipOpensDifficultyAndPickingALevelLandsInFreePlayWithTheDailyRunIntact() throws {
+        let app = launch(seed: "4242", extra: ["-unlock", "2"])
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        XCTAssertTrue(pick(app, 0))                         // a free run in progress (twice: a shield may absorb one)
+        XCTAssertTrue(pick(app, 0))
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertTrue(pick(app, 1))
+        let daily = cardState(app)
+
+        XCTAssertTrue(app.buttons["topbar.day"].label.contains("11/16"))
+        app.buttons["topbar.day"].tap()
+        XCTAssertTrue(app.buttons["difficulty.1"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["difficulty.1"].isEnabled)
+        XCTAssertFalse(app.buttons["difficulty.3"].isEnabled)
+        XCTAssertFalse(app.buttons["difficulty.0"].label.contains("目前"), "no current level while in the daily challenge")
+        screenshot(app, "daily-chip-difficulty-sheet")
+        app.buttons["difficulty.1"].tap()
+        // The free run in progress is replaced: the sheet asks first, inside itself.
+        XCTAssertTrue(app.descendants(matching: .any)["difficulty.confirmText"].waitForExistence(timeout: 2))
+        app.buttons["difficulty.confirm"].tap()
+
+        XCTAssertTrue(app.buttons["topbar.level"].waitForExistence(timeout: 3), "landed in free play")
+        XCTAssertTrue(app.buttons["topbar.level"].label.contains("進階"))
+        XCTAssertTrue(app.buttons["mode.free"].isSelected)
+        XCTAssertTrue(app.descendants(matching: .any)["picks"].label.contains("剩 7 手") ||
+                      app.descendants(matching: .any)["picks"].label.contains("剩 6 手"), "a fresh free run")
+
+        app.buttons["mode.daily"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
+        XCTAssertEqual(cardState(app), daily, "the daily run is intact")
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次", "and nothing was counted")
     }
 }
