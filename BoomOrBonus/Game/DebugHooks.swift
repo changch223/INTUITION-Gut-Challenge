@@ -19,6 +19,9 @@
 //    -daily             start in the daily challenge instead of free play (seed = today, lv 0, x1.3; -lv ignored)
 //    -onboarding        show the first-launch onboarding (without it a -seed launch has it already done)
 //    -today YYYYMMDD    fake "today" (also with -qaSave alone); see DayKey.debugToday
+//    -stats sample      fill the records page: realistic stats and 10 days of daily history (Phase 6)
+//    -stats low         one finished run with every personal record at 1, so the next run pops new-record pills
+//    -legacySample      the 舊版紀錄 link shows three old-style records (never reads or writes the real UserDefaults)
 //
 
 import Foundation
@@ -53,6 +56,10 @@ struct DebugHooks: Equatable {
     var fail = false
     var daily = false
     var onboarding = false
+    var stats: StatsSeed?
+    var legacySample = false
+
+    enum StatsSeed: String { case sample, low }
 
     static func parse(arguments: [String] = ProcessInfo.processInfo.arguments) -> DebugHooks {
         #if DEBUG
@@ -76,6 +83,10 @@ struct DebugHooks: Equatable {
         h.fail = arguments.contains("-fail")
         h.daily = arguments.contains("-daily")
         h.onboarding = arguments.contains("-onboarding")
+        h.legacySample = arguments.contains("-legacySample")
+        if let i = arguments.firstIndex(of: "-stats"), i + 1 < arguments.count {
+            h.stats = StatsSeed(rawValue: arguments[i + 1])
+        }
         if let i = arguments.firstIndex(of: "-blessings"), i + 1 < arguments.count {
             h.blessings = arguments[i + 1].split(separator: ",").compactMap { BlessingID(rawValue: String($0)) }
         }

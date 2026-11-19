@@ -88,6 +88,11 @@ struct GameScreen: View {
             if phase == .active { vm.refreshDay() }
         }
         .animation(.easeOut(duration: 0.22), value: vm.toast)
+        .animation(.easeOut(duration: reduceMotion ? 0.1 : 0.22), value: vm.recordPill)
+        .onChange(of: vm.recordPill) { _, pill in
+            // Not while a sheet covers the game: the player is somewhere else.
+            if let pill, vm.sheet == nil { AccessibilityNotification.Announcement(pill.text).post() }
+        }
         .animation(reduceMotion ? .easeOut(duration: 0.15) : .timingCurve(0.2, 0.9, 0.25, 1, duration: 0.32), value: vm.sheet)
         .animation(.easeOut(duration: 0.25), value: vm.adPlaying)
         .onChange(of: vm.toast) { _, toast in
@@ -111,17 +116,40 @@ struct GameScreen: View {
         }
     }
 
+    /// 02 §6: the gold 「★ 新紀錄」 capsule under the score area (below the picks / streak row). It never takes a tap.
+    @ViewBuilder
+    private var pillView: some View {
+        if let pill = vm.recordPill {
+            Text(verbatim: pill.text)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Theme.goldText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(Theme.gold, in: Capsule())
+                .shadow(color: .black.opacity(0.35), radius: 8, y: 6)
+                .offset(y: 78)         // under the picks / streak row, over the blessings line
+                .transition(.opacity.combined(with: reduceMotion ? .identity : .scale(scale: 0.96)))
+                .id(pill.id)
+                .allowsHitTesting(false)
+                .accessibilityIdentifier("rec.pill")
+        }
+    }
+
     // MARK: Game
 
     private var game: some View {
         VStack(spacing: 10) {
             Color.clear.frame(height: ModeSwitch.height)       // the switch itself is drawn above the scrim
             TopBar(run: vm.run, levelEnabled: vm.canInteract, openLevel: { vm.openDifficulty() },
-                   menuEnabled: vm.canInteract, openMenu: { vm.openRules() })
+                   menuEnabled: vm.canInteract, openMenu: { vm.openRules() },
+                   recordsEnabled: vm.canInteract, openRecords: { vm.openDashboard() })
             RuleBanner(boss: vm.boss, mod: vm.mod)
             ScorePanel(value: vm.run.value, target: vm.target, stretch: vm.stretch, isFirstPick: vm.isFirstPick)
                 .coachTarget(.score)
                 .overlay(alignment: .bottom) { toastView }
+                .overlay(alignment: .bottom) { pillView }
+                .zIndex(1)
             PicksStreakRow(picks: vm.run.picks, total: vm.run.stagePicksAtStart,
                            streak: vm.run.streak, smult: vm.smult)
                 .coachTarget(.meta)
@@ -204,7 +232,7 @@ struct GameScreen: View {
                             cancel: { vm.closeDifficulty() })
         case .result:
             ResultSheet(run: vm.run, unlock: vm.unlock, deepest: vm.deepest,
-                        nextAttempt: vm.nextDailyAttempt,
+                        nextAttempt: vm.nextDailyAttempt, broken: vm.brokenRecords,
                         actions: .init(sameDeck: { vm.retrySameDeck() },
                                        newRun: { vm.startNewRun() },
                                        endless: { vm.startEndless() },
@@ -219,8 +247,13 @@ struct GameScreen: View {
                        toggleMute: { vm.toggleMute() },
                        replayTour: { vm.replayOnboarding() },
                        openLevel: { vm.openDifficulty() },
+                       openRecords: { vm.openDashboard() },
                        abandon: { vm.abandon() },
                        close: { vm.closeRules() })
+        case .dashboard:
+            DashboardSheet(stats: vm.stats, daily: vm.dailyLog, unlock: vm.unlock, today: vm.today,
+                           hasRecords: vm.hasRecords, broken: vm.run.brokenRecords,
+                           close: { vm.closeDashboard() })
         case nil:
             EmptyView()
         }

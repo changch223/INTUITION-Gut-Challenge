@@ -60,6 +60,15 @@ final class GameViewModel {
         case difficulty
         case result
         case rules         // the ? button: the rules panel with its buttons (02 §2.1, §8)
+        case dashboard     // the ★ button: 我的紀錄 (02 §10)
+    }
+
+    /// The gold capsule under the score, `★ 新紀錄　最長連中 9` (02 §6).
+    struct RecordPill: Equatable, Identifiable {
+        let id: Int
+        let record: RecordID
+        let value: Int
+        var text: String { String(localized: "★ 新紀錄　") + record.name + " " + Fmt.int(value) }
     }
 
     struct Toast: Equatable, Identifiable {
@@ -79,6 +88,12 @@ final class GameViewModel {
     private(set) var sheet: Sheet?
     private(set) var adPlaying = false
     private(set) var toast: Toast?
+    /// The new-record pill on screen (2.4 s); more pills wait in a queue so they never overlap.
+    private(set) var recordPill: RecordPill?
+    #if DEBUG
+    /// Every pill issued since launch, in order (tests only; a pill is logged when it is queued).
+    @ObservationIgnored private(set) var pillLog: [RecordPill] = []
+    #endif
     private(set) var dealID = 0
     private(set) var shakeCount = 0
     /// Mirrors of SaveData so views observe them (SaveStore itself is not observable).
@@ -102,6 +117,9 @@ final class GameViewModel {
     @ObservationIgnored private var shopBusy = false
     @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private var toastCounter = 0
+    @ObservationIgnored private var pillQueue: [RecordPill] = []
+    @ObservationIgnored private(set) var pillTask: Task<Void, Never>?
+    @ObservationIgnored private var pillGeneration = 0
 
     @ObservationIgnored private let store: SaveStore
     @ObservationIgnored private let timing: Timing
@@ -163,6 +181,7 @@ final class GameViewModel {
                 $0.deepest = 0
                 // QA launches skip the onboarding (it would cover every UI test) unless `-onboarding` asks for it.
                 $0.onboardingDone = !hooks.onboarding
+                if let seed = hooks.stats { Self.seedStats(&$0, kind: seed, today: today()) }
             }
             let day = today()
             var r = Self.makeRun(mode: hooks.daily ? .daily : .free, seed: launchSeed, lv: hooks.lv ?? 0,
@@ -233,6 +252,25 @@ final class GameViewModel {
         muted = store.data.muted
     }
 
+    /// `-stats sample|low` (Debug builds, `-seed` launches only, so only ever the `save-qa.json` file):
+    /// fills the stats and the daily history so the records page can be looked at populated.
+    private static func seedStats(_ data: inout SaveData, kind: DebugHooks.StatsSeed, today: Int) {
+        switch kind {
+        case .sample:
+            let sample = SampleData.make(today: today)
+            data.stats = sample.stats
+            data.daily = sample.daily
+            data.unlock = max(data.unlock, sample.unlock)
+        case .low:
+            // One finished run with every record at 1: the next safe pick or two breaks some, so a pill shows.
+            var s = Stats()
+            s.runs = 1
+            s.byLevel[0] = Stats.Tally(runs: 1, clears: 0, best: 1)
+            for id in RecordID.allCases { s.raise(id, to: 1, day: DayKey.adding(-1, to: today)) }
+            data.stats = s
+        }
+    }
+
     /// `-seed <UInt32>` on the command line (Debug builds only).
     static func debugLaunchSeed(arguments: [String] = ProcessInfo.processInfo.arguments) -> UInt32? {
         #if DEBUG
@@ -268,6 +306,20 @@ final class GameViewModel {
 
     var mode: Mode { run.mode }
     var today: Int { clock() }
+
+    /// 我的紀錄 reads these (SaveStore is not observable; the sheet reads them when it opens).
+    var stats: Stats { store.data.stats }
+    var dailyLog: [Int: DailyRecord] { store.data.daily }
+    /// True once there is anything to show: a finished run or a daily attempt (prototype `empty`).
+    var hasRecords: Bool { store.data.stats.runs > 0 || !store.data.daily.isEmpty }
+
+    /// The records broken in this run with their current values (result sheet, 「這局剛破」).
+    var brokenRecords: [(id: RecordID, value: Int)] {
+        run.brokenRecords.compactMap { raw in
+            guard let id = RecordID(rawValue: raw), let v = store.data.stats.value(id) else { return nil }
+            return (id, v)
+        }
+    }
 
     /// The attempt number the next daily run will get (the result sheet's 「再挑戰一次（第 N 次）」).
     var nextDailyAttempt: Int { (store.data.daily[today]?.tries ?? 0) + 1 }
@@ -326,6 +378,7 @@ final class GameViewModel {
         let tgt = GameEngine.target(run)
         let first = isFirstPick
         let ev = GameEngine.pickCard(&run, index: i)
+        let stats = recordPick(ev)          // written together with the run below, in one save
 
         switch ev {
         case .safe(let delta):
@@ -363,7 +416,7 @@ final class GameViewModel {
         // Deal the next pair now (engine genPair after pickCard, as core.js / prototype.html),
         // so the save is consistent. The screen keeps showing the old faces until the deal delay ends.
         if run.picks > 0 { run.pair = GameEngine.genPair(run) }
-        save()
+        save(stats: stats)
 
         await sleeper(t.deal)
         guard !Task.isCancelled else { return }
@@ -425,9 +478,10 @@ final class GameViewModel {
         isLocked = true
         GameEngine.clearStage(&run)
         settleClear()
+        let stats = recordStageClear()
         playSound("ButtonSuccess")
         haptic { HapticManager.shared.playSuccess() }
-        if run.phase == .win { finishRun() } else { save() }
+        if run.phase == .win { finishRun(stats: stats) } else { save(stats: stats) }
         let win = run.phase == .win
         await sleeper(win ? timing.winToSheet : timing.clearToSheet)
         guard !Task.isCancelled else { return }
@@ -608,9 +662,17 @@ final class GameViewModel {
     /// A level in the difficulty sheet (also 「挑戰難度「X」」 on the win result): new free run, remembered in `lastLevel`.
     /// The new run is always free play: the difficulty does not apply to the daily challenge.
     func startLevel(_ lv: Int) {
-        // From the daily challenge (chip -> sheet) this starts a free run and leaves the daily run saved as it is.
+        // From the daily challenge (chip -> sheet) this starts a free run and leaves the daily run saved as it is,
+        // and a free run waiting in the save is replaced without counting (prototype `startFree`).
         guard (sheet == .difficulty) || (sheet == .result && run.mode == .free),
               (0...Rules.difficulties.count - 1).contains(lv), lv <= unlock else { return }
+        // 02 §9: leaving a free run that has started for another difficulty records it as abandoned, the same
+        // path as 「放棄重來」 (counts the run, the abandon, byLevel and byBlessing).
+        if run.mode == .free, runInProgress {
+            GameEngine.failStage(&run)
+            run.abandoned = true
+            finishRun()
+        }
         store.update { $0.lastLevel = lv }
         syncFromStore()
         save()
@@ -621,6 +683,7 @@ final class GameViewModel {
     /// Replaces the current run with a new one of `mode` (the old run is not saved: callers decide what it was).
     private func begin(_ mode: Mode, seed: UInt32? = nil, lv: Int? = nil) {
         cancelFlows()
+        clearPills()
         let day = today
         Self.discardStaleDaily(store, today: day)
         run = Self.makeRun(mode: mode, seed: seed, lv: lv, data: store.data, day: day, randomSeed: randomSeed)
@@ -651,6 +714,7 @@ final class GameViewModel {
         guard new != run.mode, canSwitchMode else { return }
         save()                                           // the run being left stays exactly as it is
         cancelFlows()
+        clearPills()
         let day = today
         Self.discardStaleDaily(store, today: day)
         isLocked = false
@@ -733,22 +797,155 @@ final class GameViewModel {
     }
 
     /// A run ended (cleared all six stages, out of picks for good, or abandoned). Daily runs update the day's
-    /// DailyRecord here, together with the run itself in one write. Calling it again for the same run (endless
-    /// ending after a clear) only refreshes total and marks.
-    /// Phase 6 adds `statsCounted`, the stats and the personal records here.
-    private func finishRun() {
+    /// DailyRecord here, and every run updates the stats and the end-of-run records (03 §4), all in one write
+    /// together with the run itself. Calling it again for the same run (endless ending after a clear) does not
+    /// count the run again: it only refreshes total, marks, the best totals and the records.
+    private func finishRun(stats pending: Stats? = nil) {
+        var stats = pending ?? store.data.stats
+        var record: DailyRecord?
         if run.mode == .daily {
-            var record = store.data.daily[run.day] ?? DailyRecord()
-            record.finish(&run)
-            let day = run.day, snapshot = run
-            store.update {
+            var r = store.data.daily[run.day] ?? DailyRecord()
+            r.finish(&run)
+            record = r
+        }
+        // Finish-time records are listed on the result sheet; they do not pop a pill on the game behind it.
+        noteBroken(countFinish(&stats), pill: false)
+        let snapshot = run, day = run.day
+        store.update {
+            $0.stats = stats
+            if let record {
                 $0.daily[day] = record
                 $0.runs.daily = snapshot
                 $0.mode = .daily
+            } else {
+                $0.runs.free = snapshot
+                $0.mode = .free
             }
-        } else {
-            save()
         }
+    }
+
+    // MARK: - Stats and records (03 §4)
+
+    /// The ids that already had a record before this run: only those can pop a pill (so run 1 never does).
+    /// Taken at the first check of a run, before that run changes any record.
+    private func ensureRecordBase() {
+        if run.recordBase == nil {
+            run.recordBase = store.data.stats.records.keys.map(\.rawValue).sorted()
+        }
+    }
+
+    /// Per reveal: the counters, and on a safe pick the 單手最高得分 and 最長連中 records.
+    /// Returns the new stats; the caller writes them with the run (one write per pick).
+    private func recordPick(_ ev: PickEvent) -> Stats {
+        ensureRecordBase()
+        var stats = store.data.stats
+        stats.countPick(ev)
+        var broken: [(RecordID, Int)] = []
+        if case .safe(let delta) = ev {
+            if stats.raise(.pick, to: delta, day: today) { broken.append((.pick, delta)) }
+            if stats.raise(.streak, to: run.streak, day: today) { broken.append((.streak, run.streak)) }
+        }
+        noteBroken(broken, pill: true)
+        return stats
+    }
+
+    /// Per stage clear: 單關最高分 with the score the stage ended on (still in `run.value` here).
+    /// The winning clear (stage 6) goes to the result sheet instead of a pill. The caller writes the stats.
+    private func recordStageClear() -> Stats {
+        ensureRecordBase()
+        var stats = store.data.stats
+        if stats.raise(.stage, to: run.value, day: today) {
+            noteBroken([(.stage, run.value)], pill: run.phase != .win)
+        }
+        return stats
+    }
+
+    /// The finish part: run counters once (`statsCounted`), best totals, and 單局最高總分 / 最多過關數 / 單局賺到最多金幣.
+    /// Mutates `stats` (the caller writes it) and returns the records that broke.
+    private func countFinish(_ stats: inout Stats) -> [(RecordID, Int)] {
+        ensureRecordBase()
+        if !run.statsCounted {
+            let six = run.marks.prefix(Rules.STAGES)
+            stats.countRun(mode: run.mode, lv: run.lv,
+                           won: DailyRecord.isWin(run.marks),
+                           allSuper: six.count == Rules.STAGES && six.allSatisfy { $0 == 2 },
+                           abandoned: run.abandoned,
+                           blessings: BlessingID.allCases.filter { run.has($0) })
+            run.statsCounted = true
+        }
+        stats.raiseBest(mode: run.mode, lv: run.lv, total: run.total)
+        let cleared = run.marks.filter { $0 > 0 }.count
+        var broken: [(RecordID, Int)] = []
+        if stats.raise(.total, to: run.total, day: today) { broken.append((.total, run.total)) }
+        if stats.raise(.deep, to: cleared, day: today) { broken.append((.deep, cleared)) }
+        if stats.raise(.coins, to: run.coinsEarned, day: today) { broken.append((.coins, run.coinsEarned)) }
+        return broken
+    }
+
+    /// A strict improvement: it is a new record for the run (listed, and with `pill` also announced) only if the
+    /// record existed before this run and this run has not announced it yet.
+    private func noteBroken(_ broken: [(RecordID, Int)], pill: Bool) {
+        for (id, value) in broken {
+            guard run.recordBase?.contains(id.rawValue) == true, !run.brokenRecords.contains(id.rawValue) else { continue }
+            run.brokenRecords.append(id.rawValue)
+            if pill { enqueuePill(id, value) }
+        }
+    }
+
+    // MARK: - New-record pill (02 §6)
+
+    static let pillSeconds = 2.4
+
+    private func enqueuePill(_ id: RecordID, _ value: Int) {
+        toastCounter += 1
+        let pill = RecordPill(id: toastCounter, record: id, value: value)
+        #if DEBUG
+        pillLog.append(pill)
+        #endif
+        pillQueue.append(pill)
+        guard pillTask == nil else { return }
+        let generation = pillGeneration
+        pillTask = Task { await self.drainPills(generation) }
+    }
+
+    /// One pill at a time, 2.4 s each, in the order they were earned.
+    private func drainPills(_ generation: Int) async {
+        while generation == pillGeneration, !pillQueue.isEmpty {
+            recordPill = pillQueue.removeFirst()
+            await sleeper(Self.pillSeconds)
+        }
+        guard generation == pillGeneration else { return }
+        recordPill = nil
+        pillTask = nil
+    }
+
+    /// A new run or another mode starts: pills of the run that was left must not show on the next one.
+    private func clearPills() {
+        pillGeneration += 1
+        pillTask?.cancel()
+        pillTask = nil
+        pillQueue.removeAll()
+        recordPill = nil
+    }
+
+    // MARK: - 我的紀錄 (02 §10)
+
+    /// The ★ button, or 「我的紀錄」 on the rules panel.
+    func openDashboard() {
+        if refreshDay() { return }
+        if sheet == .rules { sheet = .dashboard; return }
+        guard sheet == nil, canInteract else { return }
+        sheet = .dashboard
+    }
+
+    func closeDashboard() {
+        guard sheet == .dashboard else { return }
+        sheet = nil
+    }
+
+    /// Lets tests wait for the pill queue to run empty.
+    func waitForPills() async {
+        await pillTask?.value
     }
 
     // MARK: - Onboarding (02 §7)
@@ -886,9 +1083,10 @@ final class GameViewModel {
 
     // MARK: - Side effects
 
-    private func save() {
+    private func save(stats: Stats? = nil) {
         let snapshot = run
         store.update {
+            if let stats { $0.stats = stats }
             if snapshot.mode == .daily { $0.runs.daily = snapshot } else { $0.runs.free = snapshot }
             $0.mode = snapshot.mode
         }

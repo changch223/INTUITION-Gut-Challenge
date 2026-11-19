@@ -3,7 +3,7 @@
 //  BoomOrBonus
 //
 //  02-screens-ux.md §5.2: headline, total, stage marks, unlock note, blessings, the copyable result text
-//  and the button matrix for both modes (daily rows added in Phase 4). The record-break note is Phase 6.
+//  the button matrix for both modes (daily rows added in Phase 4) and the record-break note (Phase 6).
 //  Banner ads show on this sheet only (02 §12), mocked for now.
 //
 
@@ -14,6 +14,7 @@ struct ResultSheet: View {
     let unlock: Int
     let deepest: Int
     var nextAttempt = 1          // 「再挑戰一次（第 N 次）」
+    var broken: [(id: RecordID, value: Int)] = []     // records this run broke, with their final values
     let actions: Actions
 
     @State private var copied = false
@@ -79,6 +80,8 @@ struct ResultSheet: View {
                     .background(Theme.mint.opacity(0.22), in: RoundedRectangle(cornerRadius: 12))
                     .accessibilityIdentifier("result.unlock")
             }
+
+            if !broken.isEmpty { recordNote }
 
             SheetBody(text: blessingsText)
 
@@ -192,6 +195,19 @@ struct ResultSheet: View {
                 .buttonStyle(SheetButtonStyle(primary: true))
                 .accessibilityIdentifier("result.retry")
         }
+    }
+
+    /// 02 §5.2: 「這局打破 2 項個人紀錄：最長連中 9、單關最高分 120」, in the gold of the records page.
+    private var recordNote: some View {
+        let list = broken.map { $0.id.name + " " + Fmt.int($0.value) }.joined(separator: "、")
+        return (Text("這局打破 \(broken.count) 項個人紀錄：") + Text(verbatim: list))
+            .font(.system(size: 13.5, weight: .semibold))
+            .foregroundStyle(Theme.sheetText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .background(Theme.gold.opacity(0.28), in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("result.records")
     }
 
     private var blessingsText: Text {

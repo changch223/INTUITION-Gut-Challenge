@@ -110,9 +110,17 @@ private struct VisibleHeightKey: PreferenceKey {
 /// Cream bottom panel with a scrolling list and a footer that is always on screen (shop, difficulty).
 /// One ScrollView sized to its content (never swapped for another variant), so the scroll position
 /// survives content changes such as buying something. A bottom fade hints that there is more below.
-struct SheetScaffold<List: View, Footer: View>: View {
-    @ViewBuilder let list: List
-    @ViewBuilder let footer: Footer
+struct SheetScaffold<Header: View, List: View, Footer: View>: View {
+    let header: Header?
+    let list: List
+    let footer: Footer
+
+    /// `header` stays pinned above the scrolling list (the tabs of 我的紀錄); the other sheets have none.
+    init(@ViewBuilder header: () -> Header, @ViewBuilder list: () -> List, @ViewBuilder footer: () -> Footer) {
+        self.header = header()
+        self.list = list()
+        self.footer = footer()
+    }
 
     @State private var listHeight: CGFloat = 0
     @State private var visibleHeight: CGFloat = 0
@@ -124,6 +132,7 @@ struct SheetScaffold<List: View, Footer: View>: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            if let header { header }
             ScrollView {
                 list
                     .padding(.bottom, scrollable ? 18 : 0)
@@ -150,5 +159,13 @@ struct SheetScaffold<List: View, Footer: View>: View {
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
                 .ignoresSafeArea(edges: .bottom)
         }
+    }
+}
+
+extension SheetScaffold where Header == EmptyView {
+    init(@ViewBuilder list: () -> List, @ViewBuilder footer: () -> Footer) {
+        self.header = nil
+        self.list = list()
+        self.footer = footer()
     }
 }

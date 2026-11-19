@@ -420,6 +420,13 @@ final class GameFlowUITests: XCTestCase {
         shot.name = name
         shot.lifetime = .keepAlways
         add(shot)
+        // `TEST_RUNNER_SHOTS_DIR=<dir> xcodebuild test ...` also saves each screenshot as a PNG there (manual QA).
+        if let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"] {
+            let device = ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] ?? "sim"
+            let safe = "\(device)-\(name)".replacingOccurrences(of: " ", with: "_")
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent(safe + ".png"))
+        }
     }
 
     /// Plays on (higher danger first, through shops) until the out-of-picks panel shows.
@@ -795,7 +802,7 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["rules.abandon"].waitForExistence(timeout: 3))
         let window = app.windows.firstMatch.frame
         // The buttons are pinned: on screen before any scrolling (iPhone SE too).
-        for id in ["rules.mute", "rules.tour", "rules.level", "rules.abandon", "rules.close"] {
+        for id in ["rules.mute", "rules.tour", "rules.level", "rules.records", "rules.abandon", "rules.close"] {
             XCTAssertTrue(app.buttons[id].isHittable, id)
             XCTAssertTrue(window.contains(app.buttons[id].frame), id)
         }
@@ -834,5 +841,192 @@ final class GameFlowUITests: XCTestCase {
         app.buttons["rules.close"].tap()
         XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["rules.close"].exists)
+    }
+
+    // MARK: - 我的紀錄 (Phase 6)
+
+    private func openDashboard(_ app: XCUIApplication) {
+        app.buttons["topbar.records"].tap()
+        if !any(app, "dash.title").waitForExistence(timeout: 2) {
+            lostTaps += 1
+            print("LOST TAP on topbar.records")
+            app.buttons["topbar.records"].tap()
+        }
+        XCTAssertTrue(any(app, "dash.title").waitForExistence(timeout: 3), "the records sheet opens")
+    }
+
+    private func tab(_ app: XCUIApplication, _ id: String) {
+        app.buttons["dash.tab.\(id)"].tap()
+    }
+
+    func testDashboardOpensFromStarAndRulesFooterAndSwitchesAllTabs() throws {
+        let app = launch(extra: ["-stats", "sample", "-legacySample"])
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        openDashboard(app)
+        // Real data exists (seeded): no sample, no empty state, tabs shown.
+        XCTAssertFalse(any(app, "dash.badge.sample").exists, "no 範例資料 badge over real data")
+        XCTAssertFalse(any(app, "dash.empty").exists)
+        for t in ["overview", "daily", "levels", "blessings"] { XCTAssertTrue(app.buttons["dash.tab.\(t)"].exists, t) }
+
+        // 總覽
+        XCTAssertTrue(any(app, "dash.tile.total").exists)
+        XCTAssertTrue(any(app, "dash.tile.unlock").exists)
+        for id in ["total", "stage", "pick", "streak", "deep", "coins"] {
+            XCTAssertTrue(any(app, "rec.row.\(id)").exists, id)
+        }
+        XCTAssertTrue(any(app, "rec.row.total").label.contains("1,040"), any(app, "rec.row.total").label)
+        XCTAssertTrue(any(app, "rec.row.total").label.contains("下一個目標 1,200"), any(app, "rec.row.total").label)
+        XCTAssertTrue(any(app, "rec.row.deep").label.contains("下一個目標 10"), any(app, "rec.row.deep").label)
+        XCTAssertTrue(any(app, "dash.tile.deep").label.contains("無盡多打 2 關"), any(app, "dash.tile.deep").label)
+        screenshot(app, "dash-overview-populated")
+        app.scrollViews.firstMatch.swipeUp()
+        XCTAssertTrue(any(app, "dash.total.runs").waitForExistence(timeout: 2))
+        screenshot(app, "dash-overview-populated-bottom")
+
+        // 今日挑戰
+        tab(app, "daily")
+        XCTAssertTrue(any(app, "dash.tile.wins").waitForExistence(timeout: 2))
+        XCTAssertTrue(any(app, "dash.tile.wins").label.contains("7 / 10"), any(app, "dash.tile.wins").label)
+        screenshot(app, "dash-daily-populated")
+        // The chart and the calendar sit below the tiles: on a small screen scroll to them (lazy grid).
+        for _ in 0..<3 where !any(app, "dash.day.20261116").exists { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(any(app, "dash.day.20261116").exists, "today is in the calendar")
+        XCTAssertTrue(any(app, "dash.tries").exists, "sample today has 3 attempts")
+        XCTAssertTrue(any(app, "dash.tries").label.contains("第 3 次"), any(app, "dash.tries").label)
+        app.scrollViews.firstMatch.swipeUp()
+        sleep(1)
+        screenshot(app, "dash-daily-populated-bottom")
+
+        // 難度
+        tab(app, "levels")
+        XCTAssertTrue(any(app, "dash.level.daily").waitForExistence(timeout: 2))
+        
+        XCTAssertTrue(any(app, "dash.level.daily").exists)
+        XCTAssertTrue(any(app, "dash.level.5").label.contains("未解鎖"), any(app, "dash.level.5").label)
+        screenshot(app, "dash-levels-populated")
+
+        // 祝福
+        tab(app, "blessings")
+        XCTAssertTrue(any(app, "dash.blessing.add").waitForExistence(timeout: 2))
+        XCTAssertTrue(any(app, "dash.blessing.add").exists)
+        XCTAssertTrue(any(app, "dash.blessing.add").label.contains("8%"), any(app, "dash.blessing.add").label)
+        screenshot(app, "dash-blessings-populated")
+
+        // 舊版紀錄 -> the existing DailyRecordsView
+        let legacy = app.buttons["dash.legacy"]
+        XCTAssertTrue(legacy.exists)
+        legacy.tap()
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 3), "the old DailyRecordsView opens")
+        // Oldest first in the data (as the old writer stores it), newest first on screen.
+        let newest = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "2025年10月2日")).firstMatch
+        let middle = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "2025年9月5日")).firstMatch
+        let oldest = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "2025年8月30日")).firstMatch
+        XCTAssertTrue(newest.waitForExistence(timeout: 3))
+        XCTAssertTrue(middle.exists && oldest.exists)
+        XCTAssertLessThan(newest.frame.minY, middle.frame.minY)
+        XCTAssertLessThan(middle.frame.minY, oldest.frame.minY)
+        screenshot(app, "dash-legacy")
+        app.navigationBars.firstMatch.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["dash.close"].waitForExistence(timeout: 3))
+
+        app.buttons["dash.close"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertFalse(any(app, "dash.title").exists)
+
+        // From the rules panel footer.
+        openMenu(app)
+        app.buttons["rules.records"].tap()
+        XCTAssertTrue(any(app, "dash.title").waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["rules.close"].exists, "the rules panel gave way")
+        XCTAssertTrue(app.buttons["dash.close"].isHittable)
+        app.buttons["dash.close"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertLessThanOrEqual(lostTaps, 1)
+    }
+
+    func testDashboardEmptyStateOffersLabelledSampleData() throws {
+        let app = launch()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        openDashboard(app)
+        // No data: the empty state, no tabs, no badge.
+        XCTAssertTrue(any(app, "dash.empty").exists)
+        XCTAssertFalse(any(app, "dash.badge.sample").exists)
+        XCTAssertFalse(app.buttons["dash.tab.overview"].exists)
+        XCTAssertTrue(app.buttons["dash.start"].exists)
+        XCTAssertFalse(app.buttons["dash.legacy"].exists, "no old records, no 舊版紀錄 link")
+        screenshot(app, "dash-empty")
+
+        app.buttons["dash.sample"].tap()
+        XCTAssertTrue(any(app, "dash.badge.sample").waitForExistence(timeout: 2), "the sample is labelled")
+        XCTAssertEqual(any(app, "dash.badge.sample").label, "範例資料，不是你的紀錄")
+        XCTAssertTrue(app.buttons["dash.back"].exists)
+        XCTAssertTrue(any(app, "rec.row.total").exists)
+        XCTAssertFalse(any(app, "rec.row.total.new").exists)
+        screenshot(app, "dash-sample-overview")
+        for (t, shotName) in [("daily", "dash-sample-daily"), ("levels", "dash-sample-levels"), ("blessings", "dash-sample-blessings")] {
+            tab(app, t)
+            XCTAssertTrue(any(app, "dash.badge.sample").exists, "the badge stays on every tab")
+            sleep(1)
+            screenshot(app, shotName)
+        }
+
+        app.buttons["dash.back"].tap()
+        XCTAssertTrue(any(app, "dash.empty").waitForExistence(timeout: 2), "看我的紀錄 goes back to the real (empty) data")
+        XCTAssertFalse(any(app, "dash.badge.sample").exists)
+        app.buttons["dash.start"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+    }
+
+    func testLegacyLinkShowsInTheEmptyStateWhenOldRecordsExist() throws {
+        let app = launch(extra: ["-legacySample"])
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        openDashboard(app)
+        XCTAssertTrue(any(app, "dash.empty").exists)
+        XCTAssertTrue(app.buttons["dash.legacy"].exists, "old records stay reachable before the first new run")
+    }
+
+    func testRecordPillAppearsOncePerRecordOnASecondRun() throws {
+        // Every record is 1 from an earlier run, so this is not a first run.
+        let app = launch(extra: ["-stats", "low"])
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(any(app, "rec.pill").exists)
+        var seen: [String] = []
+        var shot = false
+        var picks = 0
+        while picks < 14, !app.buttons["fail.end"].exists, !app.buttons["shop.next"].exists, !app.buttons["result.retry"].exists {
+            picks += 1
+            let d0 = danger(of: app.buttons["card.0"].label)
+            let d1 = danger(of: app.buttons["card.1"].label)
+            _ = pick(app, d1 < d0 ? 1 : 0)           // the safer card
+            let pill = any(app, "rec.pill")
+            if pill.exists {
+                let label = pill.label
+                if seen.last != label { seen.append(label) }
+                if !shot { shot = true; screenshot(app, "record-pill") }
+            }
+        }
+        print("PILLS: \(seen)")
+        XCTAssertFalse(seen.isEmpty, "a record was broken, so a pill showed")
+        XCTAssertTrue(seen.allSatisfy { $0.hasPrefix("★ 新紀錄　") }, "\(seen)")
+        let names = seen.map { $0.replacingOccurrences(of: "★ 新紀錄　", with: "").split(separator: " ").first.map(String.init) ?? "" }
+        XCTAssertEqual(names.count, Set(names).count, "one pill per record per run: \(seen)")
+    }
+
+    func testResultSheetListsTheRecordsTheRunBroke() throws {
+        // Stage 4 failed with 50 on the board: total and 最多過關數 beat the old records of 1.
+        let app = launch(extra: ["-stats", "low", "-stage", "4", "-value", "50", "-fail"])
+        XCTAssertTrue(app.buttons["result.retry"].waitForExistence(timeout: 10))
+        let line = any(app, "result.records")
+        XCTAssertTrue(line.waitForExistence(timeout: 2))
+        XCTAssertTrue(line.label.hasPrefix("這局打破 2 項個人紀錄："), line.label)
+        XCTAssertTrue(line.label.contains("單局最高總分"), line.label)
+        XCTAssertTrue(line.label.contains("最多過關數 3"), line.label)
+        screenshot(app, "result-broken-records")
+    }
+
+    func testResultSheetOnAFirstRunHasNoRecordLine() throws {
+        let app = launch(extra: ["-stage", "4", "-value", "50", "-fail"])
+        XCTAssertTrue(app.buttons["result.retry"].waitForExistence(timeout: 10))
+        XCTAssertFalse(any(app, "result.records").exists, "a first run breaks nothing")
     }
 }

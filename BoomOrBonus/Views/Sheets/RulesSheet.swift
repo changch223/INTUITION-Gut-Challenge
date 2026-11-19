@@ -4,7 +4,7 @@
 //
 //  The ? button opens this panel (02-screens-ux.md §2.1, §8, prototype showMenu): the full rules in a list that
 //  scrolls, and the buttons pinned below it so they are on screen on an iPhone SE: sound on/off, 再看導覽,
-//  選擇難度, 放棄 (asks first, inside the sheet) and 回到遊戲. Phase 6 adds 「我的紀錄」 to the same grid.
+//  選擇難度, 我的紀錄 (Phase 6), 放棄 (asks first, inside the sheet) and 回到遊戲.
 //
 
 import SwiftUI
@@ -19,6 +19,7 @@ struct RulesSheet: View {
     let toggleMute: () -> Void
     let replayTour: () -> Void
     let openLevel: () -> Void
+    let openRecords: () -> Void
     let abandon: () -> Void
     let close: () -> Void
 
@@ -75,7 +76,7 @@ struct RulesSheet: View {
         }
     }
 
-    /// Small buttons in two columns, then the primary one: keeps the rules list tall enough on an iPhone SE.
+    /// Small buttons in two columns, the last row ends with the primary one: keeps the rules list tall enough on an iPhone SE.
     private var buttons: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -88,13 +89,18 @@ struct RulesSheet: View {
             HStack(spacing: 8) {
                 Button(action: openLevel) { Text("選擇難度") }
                     .accessibilityIdentifier("rules.level")
-                Button { confirming = true } label: { Text(mode == .daily ? "放棄（算一次）" : "放棄重來") }
-                    .accessibilityIdentifier("rules.abandon")
+                Button(action: openRecords) { Text("我的紀錄") }
+                    .accessibilityIdentifier("rules.records")
             }
             .buttonStyle(SheetButtonStyle(height: 42))
-            Button("回到遊戲", action: close)
-                .buttonStyle(SheetButtonStyle(primary: true, height: 46))
-                .accessibilityIdentifier("rules.close")
+            HStack(spacing: 8) {
+                Button { confirming = true } label: { Text(mode == .daily ? "放棄（算一次）" : "放棄重來") }
+                    .buttonStyle(SheetButtonStyle(height: 46))
+                    .accessibilityIdentifier("rules.abandon")
+                Button("回到遊戲", action: close)
+                    .buttonStyle(SheetButtonStyle(primary: true, height: 46))
+                    .accessibilityIdentifier("rules.close")
+            }
         }
     }
 

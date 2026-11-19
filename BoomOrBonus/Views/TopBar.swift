@@ -5,7 +5,7 @@
 //  02-screens-ux.md §2.1. Free play: the difficulty chip opens the difficulty sheet (Phase 3).
 //  Daily challenge (Phase 4): the chip reads "M/D 第 N 次 ▾" and also opens the difficulty sheet;
 //  picking a level there switches to free play and leaves the daily run alone (prototype #cDay).
-//  ? opens the rules panel (02 §2.1; id kept as topbar.menu); ★ (records, Phase 6) is shown but inert.
+//  ? opens the rules panel (02 §2.1; id kept as topbar.menu); ★ opens 我的紀錄 (Phase 6; topbar.records).
 //
 
 import SwiftUI
@@ -16,6 +16,8 @@ struct TopBar: View {
     var openLevel: () -> Void = {}
     var menuEnabled = true
     var openMenu: () -> Void = {}
+    var recordsEnabled = true
+    var openRecords: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 6) {
@@ -46,7 +48,13 @@ struct TopBar: View {
 
             Spacer(minLength: 0)
 
-            iconButton("★", label: "我的紀錄")
+            Button(action: openRecords) {
+                glyph("★")
+            }
+            .buttonStyle(.plain)
+            .disabled(!recordsEnabled)
+            .accessibilityLabel("我的紀錄")
+            .accessibilityIdentifier("topbar.records")
             Button(action: openMenu) {
                 glyph("?")
             }
@@ -98,14 +106,5 @@ struct TopBar: View {
             .frame(width: 34, height: 34)
             .background(Color.white.opacity(0.14), in: Circle())
             .contentShape(Circle())
-    }
-
-    private func iconButton(_ g: String, label: LocalizedStringKey) -> some View {
-        // Placeholder: records (Phase 6) does not exist yet.
-        Button {} label: { glyph(g) }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.5)
-            .accessibilityLabel(label)
     }
 }

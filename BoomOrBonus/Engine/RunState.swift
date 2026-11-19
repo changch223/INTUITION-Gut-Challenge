@@ -93,7 +93,10 @@ struct RunState: Codable, Equatable {
     var phase: Phase = .play
     var endless: Bool = false
     var coinsEarned: Int = 0
-    var brokenRecords: [String] = []
+    var brokenRecords: [String] = []     // RecordID raw values broken in this run (once each)
+    /// RecordID raw values that already had a record when this run began (taken at the first check).
+    /// Only these can pop a new-record pill, so a first run never does. nil = no check has happened yet.
+    var recordBase: [String]? = nil
     var newlyUnlockedLevel: Int? = nil
     var statsCounted: Bool = false
     var dailyCounted: Bool = false

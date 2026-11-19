@@ -15,7 +15,7 @@ struct ShopSheet: View {
     private var run: RunState { vm.run }
     private var reward: Int { run.lastRewardParts.reduce(0) { $0 + $1.amount } }
 
-    private let compact = SheetScaffold<EmptyView, EmptyView>.isShortScreen
+    private let compact = SheetScaffold<EmptyView, EmptyView, EmptyView>.isShortScreen
 
     var body: some View {
         SheetScaffold {

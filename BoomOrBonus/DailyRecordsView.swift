@@ -10,11 +10,15 @@ import SwiftUI
 struct DailyRecordsView: View {
     @ObservedObject var recordManager: GameRecordManager
     @Environment(\.dismiss) var dismiss
+
+    /// `date` is a locale-formatted string (not sortable as text). GameRecordManager appends each new day and
+    /// replaces an existing day in place, so the array is oldest first: reversed it is newest first.
+    static func newestFirst(_ records: [GameRecord]) -> [GameRecord] { records.reversed() }
     
     var body: some View {
         NavigationView {
             List {
-                ForEach(recordManager.records) { record in
+                ForEach(Self.newestFirst(recordManager.records)) { record in
                     VStack(alignment: .leading, spacing: 5) {
                         Text("\(NSLocalizedString("Date", comment: "日期前綴")) \(record.date)")
                             .font(.headline)

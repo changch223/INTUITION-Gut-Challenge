@@ -5,6 +5,7 @@
 //  SaveData (03-data-persistence.md §2) as one JSON file in Application Support.
 //  Phase 3 adds unlock and deepest (Phase 2: runs.free, lastLevel, muted, onboardingDone).
 //  Phase 4 adds runs.daily, daily[YYYYMMDD] (DailyRecord) and the mode the player was last in.
+//  Phase 6 adds stats (cumulative numbers and personal records, Stats.swift).
 //  Every field decodes with a default so later phases can add fields
 //  (daily, unlock, deepest, stats...) without invalidating existing saves.
 //
@@ -39,10 +40,11 @@ struct SaveData: Codable, Equatable {
     var onboardingDone = false
     var daily: [Int: DailyRecord] = [:]   // 03 §3, keyed by YYYYMMDD (stored as string keys in the JSON)
     var mode: Mode?                       // the mode the player was last in; nil = never saved (new install)
+    var stats = Stats()                   // 03 §4: cumulative numbers and personal records
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case runs, lastLevel, unlock, deepest, muted, onboardingDone, daily, mode }
+    private enum CodingKeys: String, CodingKey { case runs, lastLevel, unlock, deepest, muted, onboardingDone, daily, mode, stats }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -56,6 +58,7 @@ struct SaveData: Codable, Equatable {
         let raw = (try? c.decodeIfPresent([String: LossyDaily].self, forKey: .daily)) ?? [:]
         for (k, v) in raw { if let day = Int(k), let r = v.record { daily[day] = r } }
         mode = (try? c.decodeIfPresent(Mode.self, forKey: .mode)) ?? nil
+        stats = (try? c.decodeIfPresent(Stats.self, forKey: .stats)) ?? Stats()
     }
 
     func encode(to encoder: Encoder) throws {
@@ -68,6 +71,7 @@ struct SaveData: Codable, Equatable {
         try c.encode(onboardingDone, forKey: .onboardingDone)
         try c.encode(Dictionary(uniqueKeysWithValues: daily.map { (String($0.key), $0.value) }), forKey: .daily)
         try c.encodeIfPresent(mode, forKey: .mode)
+        try c.encode(stats, forKey: .stats)
     }
 
     private struct LossyDaily: Decodable {
