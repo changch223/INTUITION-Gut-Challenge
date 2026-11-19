@@ -3,7 +3,7 @@
 //  BoomOrBonusTests
 //
 //  Phase 4: daily mode in the view model: seed and attempt, attempts counted, winTry, endless re-finish,
-//  midnight, mode switching, abandon, copy and the ? menu. The date comes from an injected provider.
+//  midnight, mode switching, abandon, copy and the ? panel. The date comes from an injected provider.
 //
 
 import XCTest
@@ -290,7 +290,7 @@ final class GameViewModelDailyTests: XCTestCase {
             await vm.waitUntilSettled()
             return (vm, s)
         }
-        for act in [{ (vm: GameViewModel) in vm.pick(0) }, { vm in vm.openMenu() }, { vm in vm.bank() }] as [(GameViewModel) -> Void] {
+        for act in [{ (vm: GameViewModel) in vm.pick(0) }, { vm in vm.openRules() }, { vm in vm.bank() }] as [(GameViewModel) -> Void] {
             let (vm, s) = await rolled(act)
             XCTAssertEqual(vm.run.day, d2)
             XCTAssertEqual(vm.run.idx, 0, "the tap that arrived after midnight did not play yesterday's deck")
@@ -442,7 +442,7 @@ final class GameViewModelDailyTests: XCTestCase {
         XCTAssertEqual(vm.run.coins, 7)
     }
 
-    func testSwitchingFromTheFailSheetAndTheMenuRestoresThem() async {
+    func testSwitchingFromTheFailSheetAndTheRulesPanelRestoresThem() async {
         var r = dailyRun(day: d1)
         r.picks = 1
         let vm = makeVM(store: store(daily: r, mode: .daily), day: Day(d1))
@@ -455,8 +455,8 @@ final class GameViewModelDailyTests: XCTestCase {
         XCTAssertEqual(vm.sheet, .fail, "out of picks: the fail panel comes back")
         vm.endRun()
         vm.switchMode(.free)                                // from a result sheet
-        vm.openMenu()
-        XCTAssertEqual(vm.sheet, .menu)
+        vm.openRules()
+        XCTAssertEqual(vm.sheet, .rules)
         vm.switchMode(.daily)
         XCTAssertNil(vm.sheet)
         XCTAssertEqual(vm.mode, .daily)
@@ -545,7 +545,7 @@ final class GameViewModelDailyTests: XCTestCase {
         XCTAssertEqual(vm.run, daily)
     }
 
-    // MARK: - Result, copy, menu
+    // MARK: - Result, copy, rules panel
 
     func testCopyPutsTheShareTextOnThePasteboardAndShowsAToast() {
         var h = DebugHooks(); h.daily = true; h.fail = true; h.stage = 3
@@ -568,12 +568,12 @@ final class GameViewModelDailyTests: XCTestCase {
         XCTAssertEqual(UIPasteboard.general.string, "keep")
     }
 
-    func testMenuMuteToggleIsSaved() {
+    func testRulesPanelMuteToggleIsSaved() {
         let s = SaveStore(url: nil)
         let vm = makeVM(store: s, day: Day(d1))
         vm.toggleMute()
-        XCTAssertFalse(s.data.muted, "only from the menu")
-        vm.openMenu()
+        XCTAssertFalse(s.data.muted, "only from the rules panel")
+        vm.openRules()
         vm.toggleMute()
         XCTAssertTrue(s.data.muted)
         XCTAssertTrue(vm.muted)
@@ -581,10 +581,10 @@ final class GameViewModelDailyTests: XCTestCase {
         XCTAssertFalse(s.data.muted)
     }
 
-    func testAbandonFromTheMenuClosesItAndStartsTheNextAttempt() {
+    func testAbandonFromTheRulesPanelClosesItAndStartsTheNextAttempt() {
         let s = SaveStore(url: nil)
         let vm = makeVM(store: s, day: Day(d1))
-        vm.openMenu()
+        vm.openRules()
         vm.abandon()
         XCTAssertNil(vm.sheet)
         XCTAssertEqual(vm.run.attempt, 2)

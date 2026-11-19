@@ -80,11 +80,13 @@ final class SaveStore {
     /// RunState.version this build understands (03 §1: currently 6).
     static let runVersion = 6
 
-    /// Debug builds only: `-seed` (QA / UI tests) uses `save-qa.json`, wiped at launch, so the real
+    /// Debug builds only: the unit-test host app keeps everything in memory (never reads or writes the real save).
+    /// `-seed` (QA / UI tests) uses `save-qa.json`, wiped at launch, so the real
     /// `save-v6.json` is never touched. `-qaSave` (without `-seed`) re-opens `save-qa.json` as it is,
     /// to test kill / relaunch. Release builds always use the real file.
     static let shared: SaveStore = {
         #if DEBUG
+        if TestHost.isUnitTesting { return SaveStore(url: nil) }
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-seed") || args.contains("-qaSave"), let url = qaURL() {
             if args.contains("-seed") { try? FileManager.default.removeItem(at: url) }

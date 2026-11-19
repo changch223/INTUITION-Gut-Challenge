@@ -9,15 +9,16 @@ import SwiftUI
 
 struct SheetButtonStyle: ButtonStyle {
     var primary = false
+    var height: CGFloat = 50
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .bold))
+            .font(.system(size: height < 50 ? 14 : 15, weight: .bold))
             .multilineTextAlignment(.center)
             .minimumScaleFactor(0.8)
             .foregroundStyle(primary ? Color.white : Theme.sheetText)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: height)
             .background(primary ? Theme.sheetPrimary : Theme.sheetButton, in: RoundedRectangle(cornerRadius: 14))
             .opacity(configuration.isPressed ? 0.8 : 1)
     }

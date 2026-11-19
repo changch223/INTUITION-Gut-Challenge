@@ -14,7 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   func application(_ application: UIApplication,
       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
-    MobileAds.shared.start(completionHandler: nil)
+    // The unit-test host (Debug only) never starts the ads SDK.
+    if !TestHost.isUnitTesting { MobileAds.shared.start(completionHandler: nil) }
 
     return true
   }
@@ -28,11 +29,11 @@ struct BoomOrBonusApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousPhase: ScenePhase? = nil
     
-    /// QA / UI tests: no AppOpenAd over the game when launched with -seed or -noAds (Debug only).
+    /// QA / UI tests: no AppOpenAd over the game when launched with -seed or -noAds, or as the unit-test host (Debug only).
     private static let adsSuppressed: Bool = {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        return args.contains("-seed") || args.contains("-noAds")
+        return TestHost.isUnitTesting || args.contains("-seed") || args.contains("-noAds")
         #else
         return false
         #endif

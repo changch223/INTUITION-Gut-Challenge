@@ -87,8 +87,9 @@ final class GameFlowUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["fail.end"].waitForExistence(timeout: 5), "reached the fail sheet")
         XCTAssertTrue(app.buttons["fail.ad"].exists)
-        XCTAssertTrue(app.buttons["fail.end"].isHittable)
-        XCTAssertTrue(app.buttons["fail.ad"].isHittable)
+        // The panel may still be sliding in: wait for hittable instead of reading it right after it exists.
+        XCTAssertTrue(waitHittable(app.buttons["fail.end"]))
+        XCTAssertTrue(waitHittable(app.buttons["fail.ad"]))
         let end = app.buttons["fail.end"].frame, ad = app.buttons["fail.ad"].frame
         XCTAssertGreaterThan(end.width, 100)
         XCTAssertEqual(end.width, ad.width, accuracy: 2, "equal width")
@@ -435,15 +436,15 @@ final class GameFlowUITests: XCTestCase {
         }
     }
 
-    /// Taps ? and waits for the menu. A tap swallowed right after launch is recorded (not hidden) and retried once.
+    /// Taps ? and waits for the rules panel. A tap swallowed right after launch is recorded (not hidden) and retried once.
     private func openMenu(_ app: XCUIApplication) {
         app.buttons["topbar.menu"].tap()
-        if !app.buttons["menu.close"].waitForExistence(timeout: 2) {
+        if !app.buttons["rules.close"].waitForExistence(timeout: 2) {
             lostTaps += 1
             print("LOST TAP on topbar.menu hittable=\(app.buttons["topbar.menu"].isHittable)")
             app.buttons["topbar.menu"].tap()
         }
-        XCTAssertTrue(app.buttons["menu.close"].waitForExistence(timeout: 3), "menu opens")
+        XCTAssertTrue(app.buttons["rules.close"].waitForExistence(timeout: 3), "the rules panel opens")
     }
 
     func testSwitchToDailyAndBackKeepsBothRuns() throws {
@@ -488,24 +489,31 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
 
         openMenu(app)
-        XCTAssertEqual(app.buttons["menu.abandon"].label, "放棄（算一次）")
-        XCTAssertTrue(app.buttons["menu.mute"].exists)
-        app.buttons["menu.abandon"].tap()
+        XCTAssertTrue(app.buttons["rules.mute"].exists)
+        XCTAssertTrue(app.buttons["rules.abandon"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.buttons["rules.abandon"].label, "放棄（算一次）")
+        XCTAssertTrue(waitHittable(app.buttons["rules.abandon"]), "the sheet has stopped sliding")
+        app.buttons["rules.abandon"].tap()
         // The confirmation is inside the sheet (no system alert) and fully on screen.
-        XCTAssertTrue(app.descendants(matching: .any)["menu.confirmText"].waitForExistence(timeout: 2))
+        if !app.descendants(matching: .any)["rules.confirmText"].waitForExistence(timeout: 2) {
+            lostTaps += 1                                  // recorded, not hidden: one retry
+            print("LOST TAP on rules.abandon")
+            app.buttons["rules.abandon"].tap()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["rules.confirmText"].waitForExistence(timeout: 3))
         let window = app.windows.firstMatch.frame
-        for id in ["menu.abandonCancel", "menu.abandonConfirm"] {
-            XCTAssertTrue(app.buttons[id].isHittable, id)
+        for id in ["rules.abandonCancel", "rules.abandonConfirm"] {
+            XCTAssertTrue(waitHittable(app.buttons[id]), id)
             XCTAssertTrue(window.contains(app.buttons[id].frame), id)
         }
-        screenshot(app, "menu-abandon-confirm")
-        app.buttons["menu.abandonCancel"].tap()
-        XCTAssertTrue(app.buttons["menu.abandon"].exists, "cancel goes back to the menu")
+        screenshot(app, "rules-abandon-confirm")
+        app.buttons["rules.abandonCancel"].tap()
+        XCTAssertTrue(app.buttons["rules.abandon"].exists, "cancel goes back to the rules sheet")
         XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次")
-        app.buttons["menu.abandon"].tap()
-        app.buttons["menu.abandonConfirm"].tap()
+        app.buttons["rules.abandon"].tap()
+        app.buttons["rules.abandonConfirm"].tap()
         XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
-        XCTAssertFalse(app.buttons["menu.abandon"].exists)
+        XCTAssertFalse(app.buttons["rules.abandon"].exists)
         XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 2 次", "abandoning, even with no pick made, counts")
 
         // Play attempt 2 to the end: the result sheet says so, explains the daily rule and copies.
@@ -549,11 +557,10 @@ final class GameFlowUITests: XCTestCase {
     func testMuteToggleInMenu() throws {
         let app = launch()
         openMenu(app)
-        XCTAssertEqual(app.buttons["menu.mute"].label, "關閉音效")
-        XCTAssertEqual(app.buttons["menu.abandon"].label, "放棄重來", "free play wording")
-        app.buttons["menu.mute"].tap()
-        XCTAssertEqual(app.buttons["menu.mute"].label, "開啟音效")
-        app.buttons["menu.close"].tap()
+        XCTAssertEqual(app.buttons["rules.mute"].label, "關閉音效")
+        app.buttons["rules.mute"].tap()
+        XCTAssertEqual(app.buttons["rules.mute"].label, "開啟音效")
+        app.buttons["rules.close"].tap()
         XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
         XCTAssertLessThanOrEqual(lostTaps, 1)
     }
@@ -656,5 +663,176 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 3))
         XCTAssertEqual(cardState(app), daily, "the daily run is intact")
         XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 1 次", "and nothing was counted")
+    }
+
+    // MARK: - Onboarding and rules sheet (Phase 5)
+
+    private func waitHittable(_ el: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        let e = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND hittable == true"), object: el)
+        return XCTWaiter().wait(for: [e], timeout: timeout) == .completed
+    }
+
+    private func any(_ app: XCUIApplication, _ id: String) -> XCUIElement {
+        app.descendants(matching: .any)[id]
+    }
+
+    /// The real elements each step circles (02 §7), as the user sees them.
+    private func coachTargets(_ app: XCUIApplication, step: Int) -> [XCUIElement] {
+        switch step {
+        case 0, 5: return [app.staticTexts["score"]]
+        case 1: return [app.buttons["card.0"], app.buttons["card.1"]]
+        case 2: return [any(app, "picks")]
+        case 3: return [app.buttons["item.shield"], app.buttons["item.dbl"]]
+        default: return [app.buttons["bank"]]
+        }
+    }
+
+    /// Waits (the ring glides for 0.32s) until the ring surrounds every target, within `tolerance` points.
+    private func assertHighlight(_ app: XCUIApplication, step: Int, tolerance: CGFloat = 3,
+                                 file: StaticString = #filePath, line: UInt = #line) {
+        let ring = any(app, "coach.highlight")
+        XCTAssertTrue(ring.waitForExistence(timeout: 5), "step \(step + 1): highlight", file: file, line: line)
+        let targets = coachTargets(app, step: step)
+        let union = targets.dropFirst().reduce(targets[0].frame) { $0.union($1.frame) }
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline, !ring.frame.insetBy(dx: -tolerance, dy: -tolerance).contains(union) { usleep(100_000) }
+        let r = ring.frame
+        XCTAssertTrue(r.insetBy(dx: -tolerance, dy: -tolerance).contains(union),
+                      "step \(step + 1): highlight \(r) must contain target \(union)", file: file, line: line)
+        let window = app.windows.firstMatch.frame
+        XCTAssertTrue(window.insetBy(dx: -tolerance, dy: -tolerance).contains(r), "highlight on screen \(r)", file: file, line: line)
+        // The ring hugs its target: never more than the 5pt inset plus tolerance beyond it vertically,
+        // except the score step, where the target element is only the number inside a taller block.
+        if step != 0 && step != 5 && step != 2 {
+            XCTAssertLessThanOrEqual(union.minY - r.minY, 5 + tolerance + 12, "ring top hugs the target", file: file, line: line)
+            XCTAssertLessThanOrEqual(r.maxY - union.maxY, 5 + tolerance + 12, "ring bottom hugs the target", file: file, line: line)
+        }
+        // The ring does not swallow its neighbours (rule banner above the score, cards below the meta row, ...).
+        let banner = any(app, "ruleBanner").frame, picks = any(app, "picks").frame, card0 = app.buttons["card.0"].frame
+        switch step {
+        case 0, 5:
+            XCTAssertGreaterThanOrEqual(r.minY, banner.maxY - 6, "step \(step + 1): ring \(r) stays below the rule banner \(banner)", file: file, line: line)
+            XCTAssertLessThanOrEqual(r.maxY, picks.minY, "step \(step + 1): ring stays above the picks row \(picks)", file: file, line: line)
+        case 2:
+            XCTAssertGreaterThanOrEqual(r.minY, app.staticTexts["score"].frame.maxY, "step 3: ring below the score", file: file, line: line)
+            XCTAssertLessThanOrEqual(r.maxY, card0.minY, "step 3: ring above the cards", file: file, line: line)
+        case 1:
+            XCTAssertGreaterThanOrEqual(r.minY, picks.maxY, "step 2: ring below the meta row", file: file, line: line)
+        default: break
+        }
+        // The callout is fully on screen and does not cover the circled area.
+        let card = any(app, "coach.callout")
+        XCTAssertTrue(card.exists, file: file, line: line)
+        XCTAssertTrue(window.insetBy(dx: -tolerance, dy: -tolerance).contains(card.frame), "callout on screen \(card.frame)", file: file, line: line)
+        XCTAssertFalse(card.frame.insetBy(dx: 0, dy: 1).intersects(r.insetBy(dx: 0, dy: 3)), "callout \(card.frame) clear of ring \(r)", file: file, line: line)
+    }
+
+    func testOnboardingWalksSixStepsAlignedThenNeverReturns() throws {
+        let app = launch(extra: ["-onboarding"])
+        XCTAssertTrue(any(app, "coach.callout").waitForExistence(timeout: 10), "onboarding opens by itself")
+        for step in 0..<6 {
+            assertHighlight(app, step: step)
+            XCTAssertTrue(any(app, "coach.text").label.contains("新手導覽 \(step + 1) / 6"), any(app, "coach.text").label)
+            XCTAssertEqual(app.buttons["coach.next"].label, step == 5 ? "開始玩" : "下一步")
+            XCTAssertEqual(app.buttons["coach.skip"].exists, step < 5, "no skip on the last step")
+            screenshot(app, "coach-step-\(step + 1)")
+            if step == 1 {
+                // Taps outside the callout, even right on a card, must not reach the game.
+                let before = cardState(app)
+                let c = app.buttons["card.0"].frame
+                app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: c.midX, dy: c.midY)).tap()
+                sleep(1)
+                XCTAssertEqual(cardState(app), before, "the scrim swallows taps")
+                XCTAssertTrue(any(app, "coach.callout").exists)
+            }
+            app.buttons["coach.next"].tap()
+        }
+        XCTAssertFalse(any(app, "coach.callout").waitForExistence(timeout: 1.5), "finished")
+        XCTAssertFalse(any(app, "coach.highlight").exists)
+        XCTAssertTrue(pick(app, 0), "the game is playable again")
+        app.terminate()
+
+        let again = XCUIApplication()
+        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launch()
+        XCTAssertTrue(again.buttons["card.0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(any(again, "coach.callout").waitForExistence(timeout: 1.5), "completed once, never again")
+    }
+
+    func testOnboardingSkipOnStepOneAndReplayFromMenu() throws {
+        let app = launch(extra: ["-onboarding"])
+        XCTAssertTrue(any(app, "coach.callout").waitForExistence(timeout: 10))
+        XCTAssertTrue(any(app, "coach.text").label.contains("1 / 6"))
+        app.buttons["coach.skip"].tap()
+        XCTAssertFalse(any(app, "coach.callout").waitForExistence(timeout: 1.5))
+        app.terminate()
+
+        // Skipping counts as done: a relaunch does not show it...
+        let again = XCUIApplication()
+        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launch()
+        XCTAssertTrue(again.buttons["card.0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(any(again, "coach.callout").waitForExistence(timeout: 1.5))
+
+        // ...but 「再看導覽」 on the rules panel replays it.
+        openMenu(again)
+        again.buttons["rules.tour"].tap()
+        XCTAssertTrue(any(again, "coach.callout").waitForExistence(timeout: 3))
+        XCTAssertFalse(again.buttons["rules.close"].exists)
+        assertHighlight(again, step: 0)
+        again.buttons["coach.next"].tap()
+        assertHighlight(again, step: 1)
+        again.buttons["coach.skip"].tap()
+        XCTAssertFalse(any(again, "coach.callout").waitForExistence(timeout: 1.5))
+        XCTAssertTrue(again.buttons["topbar.menu"].isHittable)
+    }
+
+    func testRulesPanelScrollsAndAbandonsInDaily() throws {
+        let app = launch(extra: ["-daily"])
+        XCTAssertTrue(any(app, "topbar.day").waitForExistence(timeout: 10))
+        XCTAssertFalse(any(app, "coach.callout").exists, "a -seed launch skips the onboarding")
+        openMenu(app)
+        XCTAssertTrue(app.buttons["rules.abandon"].waitForExistence(timeout: 3))
+        let window = app.windows.firstMatch.frame
+        // The buttons are pinned: on screen before any scrolling (iPhone SE too).
+        for id in ["rules.mute", "rules.tour", "rules.level", "rules.abandon", "rules.close"] {
+            XCTAssertTrue(app.buttons[id].isHittable, id)
+            XCTAssertTrue(window.contains(app.buttons[id].frame), id)
+        }
+        XCTAssertEqual(app.buttons["rules.abandon"].label, "放棄（算一次）")
+        XCTAssertTrue(any(app, "rules.targets").label.contains("23、44、73、100、200、310"), any(app, "rules.targets").label)
+        screenshot(app, "rules-top")
+        let mods = any(app, "rules.dangerTable")
+        let before = mods.frame.minY
+        app.scrollViews.firstMatch.swipeUp()
+        app.scrollViews.firstMatch.swipeUp()
+        sleep(1)
+        XCTAssertLessThan(mods.frame.minY, before, "the rules scroll")
+        screenshot(app, "rules-bottom")
+        app.buttons["rules.abandon"].tap()
+        XCTAssertTrue(any(app, "rules.confirmText").waitForExistence(timeout: 2))
+        app.buttons["rules.abandonConfirm"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertEqual(chipLabel(app), "今日挑戰，11/16，第 2 次", "abandon from the rules sheet counts once")
+        XCTAssertLessThanOrEqual(lostTaps, 1)
+    }
+
+    func testRulesPanelCloseAndFreePlayWording() throws {
+        let app = launch()
+        openMenu(app)
+        XCTAssertEqual(app.buttons["rules.abandon"].label, "放棄重來")
+        screenshot(app, "rules-free-top")
+        app.scrollViews.firstMatch.swipeUp()
+        app.scrollViews.firstMatch.swipeUp()
+        sleep(1)
+        screenshot(app, "rules-free-bottom")
+        app.buttons["rules.level"].tap()
+        XCTAssertTrue(app.buttons["difficulty.cancel"].waitForExistence(timeout: 3), "選擇難度 opens the difficulty sheet")
+        app.buttons["difficulty.cancel"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        openMenu(app)
+        app.buttons["rules.close"].tap()
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["rules.close"].exists)
     }
 }

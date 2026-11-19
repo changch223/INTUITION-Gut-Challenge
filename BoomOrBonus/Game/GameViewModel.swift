@@ -59,7 +59,7 @@ final class GameViewModel {
         case shop
         case difficulty
         case result
-        case menu          // the ? button; Phase 5 adds the rules sheet here
+        case rules         // the ? button: the rules panel with its buttons (02 §2.1, §8)
     }
 
     struct Toast: Equatable, Identifiable {
@@ -88,6 +88,8 @@ final class GameViewModel {
     private(set) var muted = false
     /// Where 「取消」 in the difficulty sheet goes back to (the result sheet, or nothing).
     private(set) var difficultyReturn: Sheet?
+    /// 02 §7: the coach mark step being shown (0-based), nil when the onboarding is not running.
+    private(set) var coachStep: Int?
 
     /// Flat price of 「換一批」 at every difficulty (01 §11).
     static let rerollCost = 1
@@ -117,13 +119,16 @@ final class GameViewModel {
     /// A new install starts in the daily challenge (prototype `load('daily')`); after that the last mode is kept.
     static let live = GameViewModel(
         store: .shared, launchSeed: debugLaunchSeed(), hooks: DebugHooks.parse(),
-        today: DayKey.debugToday().map { fake in { fake } } ?? { DayKey.today() }, defaultMode: .daily)
+        today: DayKey.debugToday().map { fake in { fake } } ?? { DayKey.today() }, defaultMode: .daily,
+        showsOnboarding: !TestHost.isUnitTesting)
 
     /// - Parameter launchSeed: starts a new free run with this seed and ignores any save (QA hook).
     ///   It also resets unlock / lastLevel / deepest so every launch starts from the same state.
     /// - Parameter hooks: Debug-only launch arguments (`-stage`, `-blessings`, ...), only used with `launchSeed`.
     /// - Parameter today: the date provider (`YYYYMMDD`, local time); tests and `-today` replace it.
     /// - Parameter defaultMode: the mode when the save has none yet (the app passes `.daily`).
+    /// - Parameter showsOnboarding: the app passes true: the coach marks open by themselves until they were finished
+    ///   or skipped once (`onboardingDone`). With `-seed` only the `-onboarding` hook turns them on.
     init(
         store: SaveStore,
         launchSeed: UInt32? = nil,
@@ -136,7 +141,8 @@ final class GameViewModel {
         feedbackEnabled: Bool = true,
         randomSeed: @escaping () -> UInt32 = { UInt32.random(in: 0..<2147483647) },
         today: @escaping DayKey.Provider = { DayKey.today() },
-        defaultMode: Mode = .free
+        defaultMode: Mode = .free,
+        showsOnboarding: Bool = false
     ) {
         self.store = store
         self.timing = timing
@@ -155,6 +161,8 @@ final class GameViewModel {
                 $0.unlock = min(5, max(0, hooks.unlock ?? 0))
                 $0.lastLevel = 0
                 $0.deepest = 0
+                // QA launches skip the onboarding (it would cover every UI test) unless `-onboarding` asks for it.
+                $0.onboardingDone = !hooks.onboarding
             }
             let day = today()
             var r = Self.makeRun(mode: hooks.daily ? .daily : .free, seed: launchSeed, lv: hooks.lv ?? 0,
@@ -180,6 +188,8 @@ final class GameViewModel {
         syncFromStore()
         if resumeRun() { needsSave = true }
         if needsSave { save() }
+        let wantsOnboarding = launchSeed != nil ? hooks.onboarding : showsOnboarding
+        if wantsOnboarding, !store.data.onboardingDone, sheet == nil, canInteract { coachStep = 0 }
     }
 
     /// Opens whatever the current run was waiting for (shop, result, a stage that ended). True when `run` changed.
@@ -276,7 +286,7 @@ final class GameViewModel {
 
     /// Taps on cards, items and the bank button only work while this is true.
     var canInteract: Bool {
-        !isLocked && sheet == nil && !adPlaying && run.phase == .play && run.picks > 0
+        !isLocked && sheet == nil && !adPlaying && coachStep == nil && run.phase == .play && run.picks > 0
     }
 
     private var reduced: Bool { reduceMotion() }
@@ -635,7 +645,7 @@ final class GameViewModel {
     /// Both modes keep their own run in the save (`runs.daily` / `runs.free`). Switching is not an attempt.
     /// Blocked only while a pick / clear animation runs (locked with no sheet up) or the mock ad plays.
     /// With a sheet open the run is idle, so switching is fine: the run is saved and comes back with its sheet.
-    var canSwitchMode: Bool { !adPlaying && !(isLocked && sheet == nil) }
+    var canSwitchMode: Bool { !adPlaying && coachStep == nil && !(isLocked && sheet == nil) }
 
     func switchMode(_ new: Mode) {
         guard new != run.mode, canSwitchMode else { return }
@@ -682,31 +692,31 @@ final class GameViewModel {
         showToast(String(localized: "已複製戰績"), overSheet: true)
     }
 
-    // MARK: - ? menu (Phase 5 adds the rules sheet here)
+    // MARK: - ? rules panel (02 §8)
 
-    func openMenu() {
+    func openRules() {
         if refreshDay() { return }
         guard sheet == nil, canInteract else { return }
-        sheet = .menu
+        sheet = .rules
     }
 
-    func closeMenu() {
-        guard sheet == .menu else { return }
+    func closeRules() {
+        guard sheet == .rules else { return }
         sheet = nil
     }
 
     func toggleMute() {
-        guard sheet == .menu else { return }
+        guard sheet == .rules else { return }
         store.update { $0.muted.toggle() }
         syncFromStore()
         if !muted { playSound("Click") }
     }
 
-    /// 「放棄（算一次）」 / 「放棄這局」. Daily: ends the run as a failed attempt (even with no pick made),
+    /// 「放棄（算一次）」 / 「放棄重來」, on the rules panel. Daily: ends the run as a failed attempt (even with no pick made),
     /// counts one try and starts the next attempt. Free: ends the run (only if it had started) and deals a new one.
     func abandon() {
         if refreshDay() { return }
-        guard run.phase == .play, !isLocked, !adPlaying, sheet == nil || sheet == .menu else { return }
+        guard run.phase == .play, !isLocked, !adPlaying, sheet == nil || sheet == .rules else { return }
         let mode = run.mode, lv = run.lv
         if mode == .daily || runInProgress {
             GameEngine.failStage(&run)
@@ -741,6 +751,34 @@ final class GameViewModel {
         }
     }
 
+    // MARK: - Onboarding (02 §7)
+
+    /// 「再看導覽」 on the rules panel: closes the panel and starts at step 1.
+    func replayOnboarding() {
+        guard sheet == .rules, !isLocked, !adPlaying else { return }
+        sheet = nil
+        coachStep = 0
+    }
+
+    /// 「下一步」; on the last step 「開始玩」 finishes.
+    func nextCoach() {
+        guard let step = coachStep else { return }
+        playSound("Click")
+        if step + 1 >= CoachStep.all.count { finishOnboarding() } else { coachStep = step + 1 }
+    }
+
+    /// 「跳過」: same as finishing, it is not shown again by itself.
+    func skipCoach() {
+        guard coachStep != nil else { return }
+        playSound("Click")
+        finishOnboarding()
+    }
+
+    private func finishOnboarding() {
+        coachStep = nil
+        store.update { $0.onboardingDone = true }
+    }
+
     // MARK: - Difficulty sheet (02 §9)
 
     /// A free run that has started: leaving it counts as abandoning it.
@@ -758,6 +796,7 @@ final class GameViewModel {
 
     /// From the top-bar chip (main screen) or 「換難度」 (result sheet).
     func openDifficulty() {
+        if sheet == .rules { sheet = nil }      // 「選擇難度」 on the rules panel
         if sheet == nil {
             guard canInteract else { return }
             difficultyReturn = nil
@@ -778,7 +817,7 @@ final class GameViewModel {
     // MARK: - Items
 
     func useItem(_ item: ItemID) {
-        guard !isLocked, sheet == nil, !adPlaying, run.phase == .play, run.picks > 0 else { return }
+        guard canInteract else { return }
         switch item {
         case .shield:
             if run.shield > 0 {

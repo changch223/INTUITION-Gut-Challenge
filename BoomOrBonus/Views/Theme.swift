@@ -31,6 +31,8 @@ enum Theme {
     static let night = Color(hex: 0x10133A)
     static let deepNight = Color(hex: 0x05071C)   // toast / scrim / ad screen (prototype)
 
+    static let coachScrim = Color(hex: 0x05071C, opacity: 0.8)   // onboarding scrim (prototype .coach .hole)
+
     static let gold = Color(hex: 0xFFB21E)
     static let goldText = Color(hex: 0x1B1300)    // text on gold (prototype)
     static let mint = Color(hex: 0x16D6A3)

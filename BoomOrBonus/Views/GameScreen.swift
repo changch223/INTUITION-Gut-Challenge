@@ -23,7 +23,7 @@ struct GameScreen: View {
             Theme.background.ignoresSafeArea()
 
             game
-                .allowsHitTesting(vm.sheet == nil && !vm.adPlaying)
+                .allowsHitTesting(vm.sheet == nil && !vm.adPlaying && vm.coachStep == nil)
 
             if vm.sheet != nil {
                 Theme.deepNight.opacity(0.62)
@@ -42,6 +42,7 @@ struct GameScreen: View {
             // It is only blocked while a pick or clear animation runs, or the mock ad plays.
             VStack(spacing: 0) {
                 ModeSwitch(mode: vm.mode, enabled: vm.canSwitchMode, select: { vm.switchMode($0) })
+                    .accessibilityHidden(vm.coachStep != nil)      // the onboarding is modal for VoiceOver too
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                 Spacer(minLength: 0)
@@ -63,6 +64,21 @@ struct GameScreen: View {
                 }
             }
         }
+        // 02 §7: the onboarding sits above everything (mode switch, toast); targets are measured, not hard-coded.
+        .overlayPreferenceValue(CoachTargetKey.self) { anchors in
+            if let step = vm.coachStep {
+                GeometryReader { geo in
+                    CoachMarkOverlay(step: step,
+                                     frames: anchors.mapValues { geo[$0] },
+                                     size: geo.size,
+                                     next: { vm.nextCoach() },
+                                     skip: { vm.skipCoach() })
+                }
+                .ignoresSafeArea()
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: reduceMotion ? 0.1 : 0.25), value: vm.coachStep == nil)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             // Midnight, or the clock / time zone changed while the app stays in the foreground.
             vm.refreshDay()
@@ -82,7 +98,7 @@ struct GameScreen: View {
         .navigationBarHidden(true)
     }
 
-    private var covered: Bool { vm.sheet != nil || vm.adPlaying }
+    private var covered: Bool { vm.sheet != nil || vm.adPlaying || vm.coachStep != nil }
 
     /// Over the goal line and progress bar: never on the rule banner, the cards or the bank button.
     @ViewBuilder
@@ -101,16 +117,20 @@ struct GameScreen: View {
         VStack(spacing: 10) {
             Color.clear.frame(height: ModeSwitch.height)       // the switch itself is drawn above the scrim
             TopBar(run: vm.run, levelEnabled: vm.canInteract, openLevel: { vm.openDifficulty() },
-                   menuEnabled: vm.canInteract, openMenu: { vm.openMenu() })
+                   menuEnabled: vm.canInteract, openMenu: { vm.openRules() })
             RuleBanner(boss: vm.boss, mod: vm.mod)
             ScorePanel(value: vm.run.value, target: vm.target, stretch: vm.stretch, isFirstPick: vm.isFirstPick)
+                .coachTarget(.score)
                 .overlay(alignment: .bottom) { toastView }
             PicksStreakRow(picks: vm.run.picks, total: vm.run.stagePicksAtStart,
                            streak: vm.run.streak, smult: vm.smult)
+                .coachTarget(.meta)
             BlessingChips(blessings: vm.run.blessings)
             cards
             ItemBar(run: vm.run, enabled: vm.canInteract) { vm.useItem($0) }
+                .coachTarget(.items)
             BankButton(run: vm.run, enabled: vm.canInteract) { vm.bank() }
+                .coachTarget(.bank)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -159,6 +179,7 @@ struct GameScreen: View {
             }
         }
         .frame(maxHeight: .infinity)
+        .coachTarget(.cards)
         .animation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.26, dampingFraction: 0.65),
                    value: vm.dealID)
     }
@@ -191,11 +212,15 @@ struct GameScreen: View {
                                        playLevel: { vm.startLevel($0) },
                                        copy: { vm.copyResult() },
                                        free: { vm.switchMode(.free) }))
-        case .menu:
-            MenuSheet(mode: vm.mode, attempt: vm.run.attempt, muted: vm.muted,
-                      toggleMute: { vm.toggleMute() },
-                      abandon: { vm.abandon() },
-                      close: { vm.closeMenu() })
+        case .rules:
+            RulesSheet(mode: vm.mode, attempt: vm.run.attempt,
+                       targets: (1...Rules.STAGES).map { GameEngine.targetOf(vm.run, stage: $0) },
+                       deepest: vm.deepest, muted: vm.muted,
+                       toggleMute: { vm.toggleMute() },
+                       replayTour: { vm.replayOnboarding() },
+                       openLevel: { vm.openDifficulty() },
+                       abandon: { vm.abandon() },
+                       close: { vm.closeRules() })
         case nil:
             EmptyView()
         }

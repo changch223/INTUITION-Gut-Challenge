@@ -17,10 +17,24 @@
 //    -shop              the stage is cleared: opens the shop (or the win result at stage 6)
 //    -fail              the stage is failed: opens the result sheet
 //    -daily             start in the daily challenge instead of free play (seed = today, lv 0, x1.3; -lv ignored)
+//    -onboarding        show the first-launch onboarding (without it a -seed launch has it already done)
 //    -today YYYYMMDD    fake "today" (also with -qaSave alone); see DayKey.debugToday
 //
 
 import Foundation
+
+/// The app also runs as the host of the unit tests. There it must not touch the real save, the ads or the
+/// onboarding. XCTest sets this variable for the host process only, not for the app a UI test launches.
+/// Always false outside Debug builds.
+enum TestHost {
+    static let isUnitTesting: Bool = {
+        #if DEBUG
+        return ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        #else
+        return false
+        #endif
+    }()
+}
 
 struct DebugHooks: Equatable {
     var lv: Int?
@@ -38,6 +52,7 @@ struct DebugHooks: Equatable {
     var shop = false
     var fail = false
     var daily = false
+    var onboarding = false
 
     static func parse(arguments: [String] = ProcessInfo.processInfo.arguments) -> DebugHooks {
         #if DEBUG
@@ -60,6 +75,7 @@ struct DebugHooks: Equatable {
         h.shop = arguments.contains("-shop")
         h.fail = arguments.contains("-fail")
         h.daily = arguments.contains("-daily")
+        h.onboarding = arguments.contains("-onboarding")
         if let i = arguments.firstIndex(of: "-blessings"), i + 1 < arguments.count {
             h.blessings = arguments[i + 1].split(separator: ",").compactMap { BlessingID(rawValue: String($0)) }
         }

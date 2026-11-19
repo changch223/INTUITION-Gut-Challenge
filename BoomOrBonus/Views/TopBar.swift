@@ -5,7 +5,7 @@
 //  02-screens-ux.md §2.1. Free play: the difficulty chip opens the difficulty sheet (Phase 3).
 //  Daily challenge (Phase 4): the chip reads "M/D 第 N 次 ▾" and also opens the difficulty sheet;
 //  picking a level there switches to free play and leaves the daily run alone (prototype #cDay).
-//  ? opens the menu (Phase 5 turns it into the rules sheet); ★ (records, Phase 6) is shown but inert.
+//  ? opens the rules panel (02 §2.1; id kept as topbar.menu); ★ (records, Phase 6) is shown but inert.
 //
 
 import SwiftUI

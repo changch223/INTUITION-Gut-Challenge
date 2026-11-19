@@ -29,6 +29,7 @@ struct ItemBar: View {
                 .opacity(run.shield > 0 ? 1 : 0.4)
         }
         .buttonStyle(.plain)
+        .disabled(!enabled)
         .accessibilityLabel("保命符，\(run.shield) 張，自動擋下爆炸")
         .accessibilityIdentifier("item.shield")
     }

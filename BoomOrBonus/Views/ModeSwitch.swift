@@ -45,6 +45,7 @@ struct ModeSwitch: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .disabled(!enabled)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(id)
     }
