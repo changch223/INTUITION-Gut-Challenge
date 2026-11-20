@@ -19,7 +19,7 @@ final class AdsUITests: XCTestCase {
 
     private func launch(extra: [String]) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-seed", "20261116", "-testAds", "-today", "20261116"] + extra
+        app.launchArguments = LocaleArgs.zhHant + ["-seed", "20261116", "-testAds", "-today", "20261116"] + extra
         app.launch()
         return app
     }
@@ -149,7 +149,7 @@ final class AdsUITests: XCTestCase {
     /// this AdMob app (console setting); without one the form is skipped, which is also a valid outcome here.
     func testUMPFormWithEEAGeographyDoesNotBlockTheGame() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-seed", "20261116", "-umpEEA", "-today", "20261116"]
+        app.launchArguments = LocaleArgs.zhHant + ["-seed", "20261116", "-umpEEA", "-today", "20261116"]
         app.launch()
         sleep(8)
         shot(app, "08-ump-eea")

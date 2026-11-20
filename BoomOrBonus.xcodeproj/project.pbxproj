@@ -38,7 +38,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"/Localized: InfoPlist.strings",
-				"/Localized: Localizable.strings",
 				Info.plist,
 			);
 			target = 57710B8C2D990CD1002AF166 /* BoomOrBonus */;
@@ -51,7 +50,6 @@
 			buildPhase = 57710B892D990CD1002AF166 /* Sources */;
 			membershipExceptions = (
 				"/Localized: InfoPlist.strings",
-				"/Localized: Localizable.strings",
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */

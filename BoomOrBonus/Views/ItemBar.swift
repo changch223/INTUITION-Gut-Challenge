@@ -23,7 +23,7 @@ struct ItemBar: View {
 
     private var shieldCell: some View {
         Button { use(.shield) } label: {
-            cell(count: "\(run.shield)", name: "保命符", hint: "自動擋爆")
+            cell(count: "\(run.shield)", name: ItemID.shield.displayName, hint: "自動擋爆")
                 .overlay(RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                 .opacity(run.shield > 0 ? 1 : 0.4)
@@ -36,15 +36,15 @@ struct ItemBar: View {
 
     private func activeCell(_ item: ItemID, hint: LocalizedStringKey, armed: Bool, count: Int) -> some View {
         Button { use(item) } label: {
-            cell(count: armed ? "✓" : "\(count)", name: LocalizedStringKey(item.name), hint: hint, armed: armed)
+            cell(count: armed ? "✓" : "\(count)", name: item.displayName, hint: hint, armed: armed)
                 .opacity(!armed && count <= 0 ? 0.38 : 1)
         }
         .buttonStyle(.plain)
         .disabled(!enabled || (!armed && count <= 0))
         .accessibilityIdentifier("item.\(item.rawValue)")
         .accessibilityLabel(armed
-            ? "\(item.name)，已啟用"
-            : "\(item.name)，\(count) 個，\(Self.hintText(item))")
+            ? "\(item.displayName)，已啟用"
+            : "\(item.displayName)，\(count) 個，\(Self.hintText(item))")
     }
 
     private static func hintText(_ item: ItemID) -> String {
@@ -56,10 +56,10 @@ struct ItemBar: View {
         }
     }
 
-    private func cell(count: String, name: LocalizedStringKey, hint: LocalizedStringKey, armed: Bool = false) -> some View {
+    private func cell(count: String, name: String, hint: LocalizedStringKey, armed: Bool = false) -> some View {
         VStack(spacing: 4) {
             Text(count).font(Theme.number(17))
-            Text(name).font(.system(size: 12))
+            Text(verbatim: name).font(.system(size: 12))
             Text(hint).font(.system(size: 10.5, weight: .medium)).opacity(0.72)
         }
         .lineLimit(1)

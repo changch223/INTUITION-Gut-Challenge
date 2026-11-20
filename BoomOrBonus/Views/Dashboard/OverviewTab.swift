@@ -26,7 +26,7 @@ struct OverviewTab: View {
                      sub: (stats.value(.deep) ?? 0) > Rules.STAGES
                         ? String(localized: "無盡多打 \((stats.value(.deep) ?? 0) - Rules.STAGES) 關") : setOn(.deep),
                      id: "deep")
-            DashTile(label: Text("已解鎖難度"), value: Rules.difficulties[min(max(unlock, 0), Rules.difficulties.count - 1)].name,
+            DashTile(label: Text("已解鎖難度"), value: Rules.difficultyName(min(max(unlock, 0), Rules.difficulties.count - 1)),
                      sub: String(localized: "共 \(Rules.difficulties.count) 級"), id: "unlock")
         }
 
@@ -113,8 +113,8 @@ struct RecordRow: View {
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(Color(hex: 0xDDDFEE)).frame(height: 1) }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: id.name + " " + dashNumber(entry?.value) + "，" + targetText
-                                 + (justBroken ? "，" + String(localized: "這局剛破") : "")))
+        .accessibilityLabel(Text(verbatim: Fmt.join([id.name + " " + dashNumber(entry?.value), targetText]
+                                                 + (justBroken ? [String(localized: "這局剛破")] : []))))
         .accessibilityIdentifier(justBroken ? "rec.row.\(id.rawValue).new" : "rec.row.\(id.rawValue)")
     }
 }

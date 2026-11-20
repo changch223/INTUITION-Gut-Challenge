@@ -52,7 +52,7 @@ final class InterstitialAdManager: NSObject, InterstitialAdProviding, FullScreen
                     self.loadedAt = Date()
                     self.scheduleExpiry(of: loaded)
                 } else {
-                    if let error { print("Interstitial failed to load: \(error.localizedDescription)") }
+                    if let error { debugLog("Interstitial failed to load: \(error.localizedDescription)") }
                     self.scheduleRetry()
                 }
             }

@@ -24,12 +24,13 @@ struct DashboardSheet: View {
     enum Tab: String, CaseIterable {
         case overview, daily, levels, blessings
 
-        var title: LocalizedStringKey {
+        /// Own keys for the two long tabs: the shared 「今日挑戰」 / 「祝福」 are too long for a tab in en and ru.
+        var title: String {
             switch self {
-            case .overview: return "總覽"
-            case .daily: return "今日挑戰"
-            case .levels: return "難度"
-            case .blessings: return "祝福"
+            case .overview: return String(localized: "總覽")
+            case .daily: return String(localized: "dash.tab.daily", defaultValue: "今日挑戰")
+            case .levels: return String(localized: "難度")
+            case .blessings: return String(localized: "dash.tab.blessings", defaultValue: "祝福")
             }
         }
     }
@@ -132,7 +133,7 @@ struct DashboardSheet: View {
         HStack(spacing: 6) {
             ForEach(Tab.allCases, id: \.self) { t in
                 Button { tab = t } label: {
-                    Text(t.title)
+                    Text(verbatim: t.title)
                         .font(.system(size: 13.5, weight: .bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -225,8 +226,11 @@ extension GameRecordManager {
         #if DEBUG
         if GameViewModel.debugLaunchSeed() != nil, DebugHooks.parse().legacySample {
             // Oldest first, as the old writer appends them.
-            m.records = [("2025年8月30日", 41), ("2025年9月5日", 63), ("2025年10月2日", 77)].map {
-                GameRecord(id: UUID(), date: $0.0, score: $0.1, finalValue: $0.1 * 10, levelsPassed: 5, IntuitionLevel: "L\($0.1 / 10)")
+            let f = DateFormatter()
+            f.locale = UILocale.current
+            f.dateStyle = .long
+            m.records = [(20250830, 41), (20250905, 63), (20251002, 77)].map {
+                GameRecord(id: UUID(), date: DayKey.date($0.0).map(f.string(from:)) ?? "", score: $0.1, finalValue: $0.1 * 10, levelsPassed: 5, IntuitionLevel: "L\($0.1 / 10)")
             }
         }
         #endif

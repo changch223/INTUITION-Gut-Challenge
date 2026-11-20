@@ -36,7 +36,7 @@ struct RulesSheet: View {
                 SheetBody(text: Text("每關在手數內把分數打到目標就能過關，下一關從 0 開始，各關分數加起來是最後的總分。每張牌獨立判定會不會爆，爆了只扣一手。連中一次得分多 25%，最高 2 倍；連中會帶到下一關，爆一次就歸零。"))
 
                 SheetBody(text: Text(mode == .daily ? "今日挑戰的六關目標：" : "這個難度的六關目標：")
-                    + Text(verbatim: targets.map { Fmt.int($0) }.joined(separator: "、"))
+                    + Text(verbatim: targets.map { Fmt.int($0) }.joined(separator: String(localized: "、")))
                     + Text("。第 2、4、6 關是魔王關，其他每一關都會抽一條特殊規則。"))
                     .accessibilityIdentifier("rules.targets")
 
@@ -144,9 +144,9 @@ struct RulesSheet: View {
     private var modList: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(ModID.allCases, id: \.self) { m in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(verbatim: m.name).fontWeight(.bold).frame(width: 58, alignment: .leading)
-                    Text(verbatim: m.desc).foregroundStyle(Theme.sheetBody).frame(maxWidth: .infinity, alignment: .leading)
+                NameDescRow {
+                    Text(verbatim: m.displayName).fontWeight(.bold)
+                    Text(verbatim: m.displayDescription).foregroundStyle(Theme.sheetBody)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -190,6 +190,44 @@ struct RulesSheet: View {
                     .buttonStyle(SheetButtonStyle(primary: true))
                     .accessibilityIdentifier("rules.abandonConfirm")
             }
+        }
+    }
+}
+
+
+/// A name and its description. The name takes its own width in a column (at most 42% of the row) so that no word is
+/// ever split; when it is wider than that (long Russian / Japanese names) it goes above the description instead.
+private struct NameDescRow: Layout {
+    private let gap: CGFloat = 10
+    private let stackedGap: CGFloat = 2
+
+    private func plan(_ subviews: Subviews, width: CGFloat) -> (inColumn: Bool, name: CGSize, desc: CGSize) {
+        let name = subviews[0].sizeThatFits(.unspecified)
+        if name.width <= width * 0.42 {
+            let desc = subviews[1].sizeThatFits(ProposedViewSize(width: width - name.width - gap, height: nil))
+            return (true, name, desc)
+        }
+        let n = subviews[0].sizeThatFits(ProposedViewSize(width: width, height: nil))
+        let desc = subviews[1].sizeThatFits(ProposedViewSize(width: width, height: nil))
+        return (false, n, desc)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let w = proposal.width ?? 320
+        let p = plan(subviews, width: w)
+        return CGSize(width: w, height: p.inColumn ? max(p.name.height, p.desc.height) : p.name.height + stackedGap + p.desc.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let p = plan(subviews, width: bounds.width)
+        if p.inColumn {
+            subviews[0].place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: p.name.width, height: nil))
+            subviews[1].place(at: CGPoint(x: bounds.minX + p.name.width + gap, y: bounds.minY), anchor: .topLeading,
+                              proposal: ProposedViewSize(width: bounds.width - p.name.width - gap, height: nil))
+        } else {
+            subviews[0].place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: bounds.width, height: nil))
+            subviews[1].place(at: CGPoint(x: bounds.minX, y: bounds.minY + p.name.height + stackedGap), anchor: .topLeading,
+                              proposal: ProposedViewSize(width: bounds.width, height: nil))
         }
     }
 }

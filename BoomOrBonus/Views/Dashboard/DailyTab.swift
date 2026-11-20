@@ -28,7 +28,7 @@ struct DailyTab: View {
             DashTile(label: Text("連續破關"), value: String(localized: "\(streak) 天"),
                      sub: String(localized: "最長 \(best) 天"), id: "streak")
             DashTile(label: Text("最少幾次破關"), value: fewest.map { String(localized: "第 \($0) 次") } ?? "—", sub: "", id: "fewest")
-            DashTile(label: Text("平均幾次破關"), value: average.map { String(localized: "\(String(format: "%.1f", $0)) 次") } ?? "—",
+            DashTile(label: Text("平均幾次破關"), value: average.map { String(localized: "\(Fmt.dec1($0)) 次") } ?? "—",
                      sub: "", id: "average")
         }
 
@@ -86,10 +86,10 @@ struct DailyTab: View {
 
     private func chartSummary(_ shown: [DailyRecord.Attempt], offset: Int) -> String {
         let parts = shown.enumerated().map { i, a in
-            String(localized: "第 \(offset + i + 1) 次") + (a.cleared >= Rules.STAGES
-                ? String(localized: "破關") : String(localized: "過了 \(a.cleared) 關"))
+            a.cleared >= Rules.STAGES ? String(localized: "第 \(offset + i + 1) 次破關")
+                                      : String(localized: "第 \(offset + i + 1) 次過了 \(a.cleared) 關")
         }
-        return String(localized: "今天每一次打到哪裡") + "：" + parts.joined(separator: "，")
+        return String(localized: "今天每一次打到哪裡：\(Fmt.list(parts))")
     }
 
     // MARK: Calendar
@@ -132,7 +132,7 @@ struct DailyTab: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: label + (day == today ? "，" + String(localized: "今天") : "")))
+        .accessibilityLabel(Text(verbatim: day == today ? Fmt.join([label, String(localized: "今天")]) : label))
         .accessibilityIdentifier("dash.day.\(day)")
     }
 }

@@ -31,8 +31,8 @@ enum ShareText {
         let daily = run.mode == .daily
 
         let head = "INTUITION++ \(DayKey.monthDay(run.day)) "
-            + (daily ? String(localized: "今日挑戰")
-                     : String(localized: "自由練習") + " · " + Rules.difficulties[run.lv].name)
+            + (daily ? String(localized: "share.daily", defaultValue: "今日挑戰")
+                     : String(localized: "share.free", defaultValue: "自由練習") + " · " + Rules.difficultyName(run.lv))
 
         var result: String
         if daily {

@@ -30,6 +30,7 @@ struct TopBar: View {
             }
             .font(.system(size: 12.5, weight: .semibold))
             .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .padding(.horizontal, 11).padding(.vertical, 8)
             .background(Color.white.opacity(0.14), in: Capsule())
 
@@ -69,16 +70,17 @@ struct TopBar: View {
 
     private var levelChip: some View {
         Button(action: openLevel) {
-            Text("練習 · \(Rules.difficulties[run.lv].name) ▾")
+            Text("練習 · \(Rules.difficultyName(run.lv)) ▾")
                 .font(.system(size: 12.5, weight: .medium))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .padding(.horizontal, 11).padding(.vertical, 8)
                 .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(!levelEnabled)
-        .accessibilityLabel("練習，難度「\(Rules.difficulties[run.lv].name)」，選擇難度")
+        .accessibilityLabel("練習，難度「\(Rules.difficultyName(run.lv))」，選擇難度")
         .accessibilityIdentifier("topbar.level")
     }
 
@@ -89,6 +91,7 @@ struct TopBar: View {
             Text("\(md) 第 \(run.attempt) 次 ▾")
                 .font(.system(size: 12.5, weight: .medium))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .padding(.horizontal, 11).padding(.vertical, 8)
                 .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
                 .contentShape(Capsule())

@@ -41,8 +41,17 @@ enum DayKey {
         return from(moved, calendar: calendar)
     }
 
-    /// 20261116 -> "11/16" (the top-bar chip and the share text).
-    static func monthDay(_ day: Int) -> String { "\(day / 100 % 100)/\(day % 100)" }
+    /// 20261116 -> "11/16" (the top-bar chip and the share text), in the short month-day order of the UI language
+    /// ("16.11" Russian, "16/11" zh-HK).
+    static func monthDay(_ day: Int, locale: Locale = UILocale.current) -> String {
+        guard let d = date(day) else { return "\(day / 100 % 100)/\(day % 100)" }
+        let f = DateFormatter()
+        f.locale = locale
+        f.calendar = gregorian()
+        f.timeZone = gregorian().timeZone
+        f.setLocalizedDateFormatFromTemplate("Md")
+        return f.string(from: d)
+    }
 
     /// `-today YYYYMMDD` (Debug builds only). Only honoured together with `-seed` or `-qaSave`, so a fake
     /// date can never write into the real `save-v6.json`.

@@ -229,8 +229,15 @@ final class DailyRecordTests: XCTestCase {
         XCTAssertEqual(DayKey.adding(-1, to: 20250301), 20250228)
         XCTAssertEqual(DayKey.adding(-1, to: 20260101), 20251231)
         XCTAssertEqual(DayKey.adding(1, to: 20261231), 20270101)
-        XCTAssertEqual(DayKey.monthDay(20261116), "11/16")
-        XCTAssertEqual(DayKey.monthDay(20260105), "1/5")
+        let tw = Locale(identifier: "zh_TW")
+        XCTAssertEqual(DayKey.monthDay(20261116, locale: tw), "11/16")
+        XCTAssertEqual(DayKey.monthDay(20260105, locale: tw), "1/5")
+        // Short month-day order of each UI language.
+        XCTAssertEqual(DayKey.monthDay(20260105, locale: Locale(identifier: "en")), "1/5")
+        XCTAssertEqual(DayKey.monthDay(20260105, locale: Locale(identifier: "ja")), "1/5")
+        XCTAssertEqual(DayKey.monthDay(20260105, locale: Locale(identifier: "zh-Hans")), "1/5")
+        XCTAssertEqual(DayKey.monthDay(20260105, locale: Locale(identifier: "zh-HK")), "5/1")
+        XCTAssertEqual(DayKey.monthDay(20261116, locale: Locale(identifier: "ru")), "16.11")
     }
 
     func testDebugTodayNeedsAnIsolatedSaveAndAValidDate() {

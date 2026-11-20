@@ -614,9 +614,9 @@ final class GameViewModel {
         isLocked = false
         var text = ""
         if let b = GameEngine.bossOf(stage: run.stage) {
-            text = String(localized: "魔王「\(b.name)」：\(b.desc)")
+            text = String(localized: "魔王「\(b.displayName)」：\(b.displayDescription)")
         } else if let m = GameEngine.modOf(run) {
-            text = String(localized: "第 \(run.stage) 關規則「\(m.name)」：\(m.desc)")
+            text = String(localized: "第 \(run.stage) 關規則「\(m.displayName)」：\(m.displayDescription)")
         }
         if run.has(.eye) {
             let eye = String(localized: "千里眼：送你 1 個透視")
@@ -786,7 +786,7 @@ final class GameViewModel {
         syncFromStore()
         save()
         begin(.free, seed: randomSeed(), lv: lv)
-        showToast(String(localized: "自由練習 · 難度「\(Rules.difficulties[lv].name)」"), seconds: 2)
+        showToast(String(localized: "自由練習 · 難度「\(Rules.difficultyName(lv))」"), seconds: 2)
     }
 
     /// Replaces the current run with a new one of `mode` (the old run is not saved: callers decide what it was).

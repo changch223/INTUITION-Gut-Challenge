@@ -29,7 +29,11 @@ struct ResultSheet: View {
         var free: () -> Void = {}
     }
 
-    private static let tiers = ["直覺迷路了", "感覺不太靈", "普通水準", "小有靈感", "預感強到爆", "神準直覺", "歐皇現世"]
+    /// The seven titles by stages cleared (0...6 and beyond).
+    private static var tiers: [String] {
+        [String(localized: "直覺迷路了"), String(localized: "感覺不太靈"), String(localized: "普通水準"), String(localized: "小有靈感"),
+         String(localized: "預感強到爆"), String(localized: "神準直覺"), String(localized: "歐皇現世")]
+    }
 
     private var cleared: Int { run.marks.filter { $0 > 0 }.count }
     private var firstSix: [Int] { Array(run.marks.prefix(Rules.STAGES)) }
@@ -46,11 +50,12 @@ struct ResultSheet: View {
             head = Text("止步第 \(run.stage) 關")
         }
         return head + Text(" · ")
-            + (run.mode == .daily ? Text("今日挑戰第 \(run.attempt) 次") : Text("難度「\(Rules.difficulties[run.lv].name)」"))
+            + (run.mode == .daily ? Text("今日挑戰第 \(run.attempt) 次") : Text("難度「\(Rules.difficultyName(run.lv))」"))
     }
 
     private var title: String {
-        Self.tiers[min(cleared, Self.tiers.count - 1)] + (allStretch ? " · " + String(localized: "全關超標") : "")
+        let tiers = Self.tiers
+        return tiers[min(cleared, tiers.count - 1)] + (allStretch ? " · " + String(localized: "全關超標") : "")
     }
 
     var body: some View {
@@ -81,8 +86,7 @@ struct ResultSheet: View {
                 .accessibilityIdentifier("result.summary")
 
             if let lv = run.newlyUnlockedLevel, run.phase == .win {
-                let d = Rules.difficulties[lv]
-                Text("解鎖新難度「\(d.name)」：\(d.desc)。難度會累加，前面的規則也一起生效。")
+                Text("解鎖新難度「\(Rules.difficultyName(lv))」：\(Rules.difficultyDescription(lv))。難度會累加，前面的規則也一起生效。")
                     .font(.system(size: 13.5, weight: .medium))
                     .foregroundStyle(Theme.sheetText)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -164,7 +168,7 @@ struct ResultSheet: View {
                 } else {
                     let next = run.lv + 1
                     if next < Rules.difficulties.count && next <= unlock {
-                        Button { actions.playLevel(next) } label: { Text("挑戰難度「\(Rules.difficulties[next].name)」") }
+                        Button { actions.playLevel(next) } label: { Text("挑戰難度「\(Rules.difficultyName(next))」") }
                             .buttonStyle(SheetButtonStyle())
                             .accessibilityIdentifier("result.nextLevel")
                     } else {
@@ -205,7 +209,7 @@ struct ResultSheet: View {
 
     /// 02 §5.2: 「這局打破 2 項個人紀錄：最長連中 9、單關最高分 120」, in the gold of the records page.
     private var recordNote: some View {
-        let list = broken.map { $0.id.name + " " + Fmt.int($0.value) }.joined(separator: "、")
+        let list = Fmt.list(broken.map { $0.id.name + " " + Fmt.int($0.value) })
         return (Text("這局打破 \(broken.count) 項個人紀錄：") + Text(verbatim: list))
             .font(.system(size: 13.5, weight: .semibold))
             .foregroundStyle(Theme.sheetText)
@@ -219,7 +223,7 @@ struct ResultSheet: View {
     private var blessingsText: Text {
         let owned = BlessingID.allCases.filter { run.has($0) }
         guard !owned.isEmpty else { return Text("這局沒有買祝福。") }
-        let names = owned.map { run.level($0) > 1 ? "\($0.name) ×\(run.level($0))" : $0.name }.joined(separator: "、")
+        let names = Fmt.list(owned.map { run.level($0) > 1 ? "\($0.displayName) ×\(run.level($0))" : $0.displayName })
         return Text("這局帶的祝福：") + Text(verbatim: names)
     }
 
@@ -230,9 +234,9 @@ struct ResultSheet: View {
                 let m: Int? = i < run.marks.count ? run.marks[i] : nil
                 Group {
                     switch m {
-                    case 2: Text("超")
-                    case 1: Text("過")
-                    case 0: Text("敗").foregroundStyle(.white)
+                    case 2: Text(verbatim: String(localized: "result.mark.stretch", defaultValue: "超"))
+                    case 1: Text(verbatim: String(localized: "result.mark.clear", defaultValue: "過"))
+                    case 0: Text(verbatim: String(localized: "result.mark.fail", defaultValue: "敗")).foregroundStyle(.white)
                     default: Text(verbatim: "")
                     }
                 }
@@ -258,8 +262,9 @@ struct ResultSheet: View {
 
     private var markSummary: String {
         let words = run.marks.enumerated().map { i, m in
-            String(localized: "第 \(i + 1) 關") + (m == 2 ? String(localized: "超標") : m == 1 ? String(localized: "過關") : String(localized: "失敗"))
+            m == 2 ? String(localized: "第 \(i + 1) 關超標")
+                   : m == 1 ? String(localized: "第 \(i + 1) 關過關") : String(localized: "第 \(i + 1) 關失敗")
         }
-        return words.joined(separator: "，")
+        return Fmt.list(words)
     }
 }

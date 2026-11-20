@@ -8,6 +8,13 @@
 
 import Foundation
 
+/// Console logging for the ad managers: Debug builds only.
+@inline(__always) func debugLog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    print(message())
+    #endif
+}
+
 enum AdConfig {
     /// Set while the real interstitial unit has not been created in AdMob yet.
     static let interstitialPlaceholder = "INTERSTITIAL_UNIT_ID_TODO"

@@ -22,17 +22,18 @@ struct LevelsTab: View {
             }
             .foregroundStyle(Theme.sheetMuted)
             tally(Text("今日挑戰"), stats.daily, id: "daily")
-            ForEach(Array(Rules.difficulties.enumerated()), id: \.offset) { i, d in
+            ForEach(Rules.difficulties, id: \.self) { i in
+                let name = Rules.difficultyName(i)
                 if i > unlock {
                     GridRow {
-                        Text(verbatim: d.name)
-                            .accessibilityLabel(Text(verbatim: d.name + "，" + String(localized: "未解鎖")))
+                        Text(verbatim: name)
+                            .accessibilityLabel(Text(verbatim: Fmt.join([name, String(localized: "未解鎖")])))
                             .accessibilityIdentifier("dash.level.\(i)")
                         Text("未解鎖").foregroundStyle(Theme.sheetMuted).gridCellColumns(3)
                             .accessibilityHidden(true)
                     }
                 } else {
-                    tally(Text(verbatim: d.name), stats.byLevel.indices.contains(i) ? stats.byLevel[i] : Stats.Tally(), id: "\(i)")
+                    tally(Text(verbatim: name), stats.byLevel.indices.contains(i) ? stats.byLevel[i] : Stats.Tally(), id: "\(i)")
                 }
             }
         }

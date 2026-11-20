@@ -35,6 +35,8 @@ struct ScorePanel: View {
 
             goal
                 .font(.system(size: 13.5))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .foregroundStyle(Theme.inkMuted)
                 .frame(minHeight: 22)
                 .padding(.top, 2).padding(.bottom, 9)

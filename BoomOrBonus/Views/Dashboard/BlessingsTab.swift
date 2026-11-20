@@ -33,8 +33,8 @@ struct BlessingsTab: View {
                 .foregroundStyle(Theme.sheetMuted)
                 ForEach(rows, id: \.id) { r in
                     GridRow {
-                        Text(verbatim: r.id.name)
-                            .accessibilityLabel(Text(verbatim: r.id.name + "，" + String(localized: "帶過 \(r.tally.runs) 局，破關 \(r.tally.wins) 次，破關率 ") + dashPercent(r.tally.wins, of: r.tally.runs)))
+                        Text(verbatim: r.id.displayName)
+                            .accessibilityLabel(Text(verbatim: Fmt.join([r.id.displayName, String(localized: "帶過 \(r.tally.runs) 局，破關 \(r.tally.wins) 次，破關率 ") + dashPercent(r.tally.wins, of: r.tally.runs)])))
                             .accessibilityIdentifier("dash.blessing.\(r.id.rawValue)")
                         Text(verbatim: "\(r.tally.runs)").font(Theme.number(13))
                         Text(verbatim: "\(r.tally.wins)").font(Theme.number(13))

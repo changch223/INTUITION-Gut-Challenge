@@ -80,23 +80,61 @@ enum Theme {
     }
 }
 
+/// The locale of the language the UI is shown in (the lproj the bundle picked), not the device region:
+/// numbers and dates then match the words around them.
+enum UILocale {
+    static let current: Locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+}
+
 enum Fmt {
     private static let formatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal
-        f.locale = Locale(identifier: "en_US")
+        f.locale = UILocale.current
         return f
     }()
 
-    /// 1,234 style, like prototype fmt().
+    private static let decimals: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = UILocale.current
+        f.usesGroupingSeparator = false
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        return f
+    }()
+
+    private static let oneDecimal: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = UILocale.current
+        f.usesGroupingSeparator = false
+        f.minimumFractionDigits = 1
+        f.maximumFractionDigits = 1
+        return f
+    }()
+
+    private static let lists: ListFormatter = {
+        let f = ListFormatter()
+        f.locale = UILocale.current
+        return f
+    }()
+
+    /// 1,234 style with the UI language's grouping (1 234 in Russian), like prototype fmt().
     static func int(_ n: Int) -> String { formatter.string(from: NSNumber(value: n)) ?? "\(n)" }
 
-    /// 2 -> "2", 1.5 -> "1.5", 1.75 -> "1.75"
+    /// 2 -> "2", 1.5 -> "1.5" ("1,5" in Russian), 1.75 -> "1.75"
     static func num(_ x: Double) -> String {
         let r = (x * 100).rounded() / 100
-        if r == r.rounded() { return String(Int(r)) }
-        var s = String(format: "%.2f", r)
-        while s.hasSuffix("0") { s.removeLast() }
-        return s
+        return decimals.string(from: NSNumber(value: r)) ?? String(r)
     }
+
+    /// Pieces of a VoiceOver sentence joined with the UI language's comma (， / 、 / ", ").
+    static func join(_ parts: [String]) -> String { parts.joined(separator: String(localized: "，")) }
+
+    /// One decimal, in the UI language ("2.4", "2,4" in Russian).
+    static func dec1(_ x: Double) -> String { oneDecimal.string(from: NSNumber(value: x)) ?? String(format: "%.1f", x) }
+
+    /// "A, B and C" in the UI language (a、b和c in Chinese).
+    static func list(_ items: [String]) -> String { lists.string(from: items) ?? items.joined(separator: ", ") }
 }

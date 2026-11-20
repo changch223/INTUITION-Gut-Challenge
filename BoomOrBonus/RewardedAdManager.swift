@@ -65,7 +65,7 @@ final class RewardedAdManager: NSObject, RewardedAdProviding, FullScreenContentD
                     self.scheduleExpiry(of: loaded)
                     self.onReadyChange?(true)
                 } else {
-                    if let error { print("Rewarded ad failed to load: \(error.localizedDescription)") }
+                    if let error { debugLog("Rewarded ad failed to load: \(error.localizedDescription)") }
                     let changed = !self.loadFailedFlag
                     self.loadFailedFlag = true
                     if changed { self.onReadyChange?(false) }

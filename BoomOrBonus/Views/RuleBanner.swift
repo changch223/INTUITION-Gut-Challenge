@@ -14,15 +14,15 @@ struct RuleBanner: View {
     var body: some View {
         if let boss {
             banner(
-                title: Text("魔王 \(boss.name)").fontWeight(.bold),
-                desc: boss.desc,
+                title: Text("魔王 \(boss.displayName)").fontWeight(.bold),
+                desc: boss.displayDescription,
                 background: Theme.red,
                 foreground: .white
             )
         } else if let mod {
             banner(
-                title: Text("本關規則 \(mod.name)").fontWeight(.bold).foregroundColor(Theme.gold),
-                desc: mod.desc,
+                title: Text("本關規則 \(mod.displayName)").fontWeight(.bold).foregroundColor(Theme.gold),
+                desc: mod.displayDescription,
                 background: Color.white.opacity(0.16),
                 foreground: Theme.ink
             )

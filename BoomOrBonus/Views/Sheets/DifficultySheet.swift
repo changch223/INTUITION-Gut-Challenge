@@ -17,7 +17,8 @@ struct DifficultySheet: View {
     let cancel: () -> Void
 
     /// Simulated full-clear rates (01 §13, prototype SIMLV).
-    private static let simRates = ["16%", "9.9%", "4.6%", "2.8%", "1.2%", "0.8%"]
+    private static let simRatePercents: [Double] = [16, 9.9, 4.6, 2.8, 1.2, 0.8]
+    private static func simRate(_ i: Int) -> String { Fmt.num(simRatePercents[i]) + "%" }
 
     @State private var pending: Int?
 
@@ -27,8 +28,8 @@ struct DifficultySheet: View {
                 SheetTitle(small: Text("自由練習"), big: Text("選擇難度"))
                 SheetBody(text: Text("破關一個難度就解鎖下一個。難度會累加：選「老手」時，「進階」的規則也一起生效。今日挑戰有自己的難度（目標 ×1.3），可以無限重打。"))
 
-                ForEach(Array(Rules.difficulties.enumerated()), id: \.offset) { i, d in
-                    option(i, name: d.name, desc: d.desc)
+                ForEach(Rules.difficulties, id: \.self) { i in
+                    option(i, name: Rules.difficultyName(i), desc: Rules.difficultyDescription(i))
                 }
 
                 SheetBody(text: Text("右邊是模擬的全破率（看期望值選牌、會買祝福）。選了之後會開始新的一局。")
@@ -52,7 +53,7 @@ struct DifficultySheet: View {
         let locked = i > unlock
         let isCurrent = i == currentLevel
         let rule = i == 0 ? desc : String(localized: "前一級的規則，再加上：\(desc)")
-        let lockedText = String(localized: "破關「\(Rules.difficulties[max(0, i - 1)].name)」後解鎖")
+        let lockedText = String(localized: "破關「\(Rules.difficultyName(max(0, i - 1)))」後解鎖")
         return Button {
             if inProgress { pending = i } else { pick(i) }
         } label: {
@@ -69,7 +70,7 @@ struct DifficultySheet: View {
                 if locked {
                     Image(systemName: "lock.fill").font(.system(size: 13)).foregroundStyle(Theme.sheetMuted)
                 } else {
-                    Text(verbatim: Self.simRates[i]).font(Theme.number(13)).foregroundStyle(Theme.sheetMuted)
+                    Text(verbatim: Self.simRate(i)).font(Theme.number(13)).foregroundStyle(Theme.sheetMuted)
                 }
             }
             .foregroundStyle(Theme.sheetText)
@@ -85,8 +86,9 @@ struct DifficultySheet: View {
         .disabled(locked || pending != nil)
         .opacity(locked ? 0.5 : (pending != nil && pending != i ? 0.6 : 1))
         .accessibilityLabel(locked
-            ? "\(i + 1)，\(name)，\(lockedText)"
-            : "\(i + 1)，\(name)\(isCurrent ? String(localized: "，目前") : "")，\(rule)，" + String(localized: "模擬全破率 \(Self.simRates[i])"))
+            ? Fmt.join(["\(i + 1)", name, lockedText])
+            : Fmt.join(["\(i + 1)", name] + (isCurrent ? [String(localized: "目前")] : [])
+                       + [rule, String(localized: "模擬全破率 \(Self.simRate(i))")]))
         .accessibilityIdentifier("difficulty.\(i)")
     }
 
@@ -94,8 +96,8 @@ struct DifficultySheet: View {
     private func confirm(_ lv: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             SheetBody(text: currentLevel < 0
-                ? Text("放棄自由練習進行中的那局，開始難度「\(Rules.difficulties[lv].name)」？")
-                : Text("放棄目前這局，開始難度「\(Rules.difficulties[lv].name)」？"))
+                ? Text("放棄自由練習進行中的那局，開始難度「\(Rules.difficultyName(lv))」？")
+                : Text("放棄目前這局，開始難度「\(Rules.difficultyName(lv))」？"))
                 .fontWeight(.bold)
                 .accessibilityIdentifier("difficulty.confirmText")
             HStack(spacing: 8) {

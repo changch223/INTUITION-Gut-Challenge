@@ -21,7 +21,7 @@ final class GameFlowUITests: XCTestCase {
 
     private func launch(seed: String = "20261116", extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-seed", seed, "-noAds", "-today", "20261116"] + extra
+        app.launchArguments = LocaleArgs.zhHant + ["-seed", seed, "-noAds", "-today", "20261116"] + extra
         app.launch()
         return app
     }
@@ -222,7 +222,7 @@ final class GameFlowUITests: XCTestCase {
         app.terminate()
 
         let again = XCUIApplication()
-        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261116"]
         again.launch()
         XCTAssertTrue(again.buttons["shop.next"].waitForExistence(timeout: 10), "shop reopens")
         XCTAssertEqual((0..<3).map { again.buttons["shop.blessing.\($0)"].label }, slots, "same shelf")
@@ -600,7 +600,7 @@ final class GameFlowUITests: XCTestCase {
         app.terminate()
 
         let again = XCUIApplication()
-        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261116"]
         again.launch()
         XCTAssertTrue(again.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10), "opens in daily mode")
         XCTAssertTrue(again.buttons["mode.daily"].isSelected)
@@ -610,7 +610,7 @@ final class GameFlowUITests: XCTestCase {
 
         // After midnight yesterday's unfinished run is void, and it is not an attempt: still attempt 1.
         let next = XCUIApplication()
-        next.launchArguments = ["-qaSave", "-noAds", "-today", "20261117"]
+        next.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261117"]
         next.launch()
         XCTAssertTrue(next.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10))
         XCTAssertEqual(next.descendants(matching: .any)["topbar.day"].label, "今日挑戰，11/17，第 1 次")
@@ -619,7 +619,7 @@ final class GameFlowUITests: XCTestCase {
 
         // And going back to the 16th: that day was never counted, so the next attempt there is still 1.
         let back = XCUIApplication()
-        back.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        back.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261116"]
         back.launch()
         XCTAssertTrue(back.descendants(matching: .any)["topbar.day"].waitForExistence(timeout: 10))
         XCTAssertEqual(back.descendants(matching: .any)["topbar.day"].label, "今日挑戰，11/16，第 1 次")
@@ -777,7 +777,7 @@ final class GameFlowUITests: XCTestCase {
         app.terminate()
 
         let again = XCUIApplication()
-        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261116"]
         again.launch()
         XCTAssertTrue(again.buttons["card.0"].waitForExistence(timeout: 10))
         XCTAssertFalse(any(again, "coach.callout").waitForExistence(timeout: 1.5), "completed once, never again")
@@ -793,7 +793,7 @@ final class GameFlowUITests: XCTestCase {
 
         // Skipping counts as done: a relaunch does not show it...
         let again = XCUIApplication()
-        again.launchArguments = ["-qaSave", "-noAds", "-today", "20261116"]
+        again.launchArguments = LocaleArgs.zhHant + ["-qaSave", "-noAds", "-today", "20261116"]
         again.launch()
         XCTAssertTrue(again.buttons["card.0"].waitForExistence(timeout: 10))
         XCTAssertFalse(any(again, "coach.callout").waitForExistence(timeout: 1.5))

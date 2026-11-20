@@ -67,7 +67,7 @@ struct BankButton: View {
     private var subtitle: Text {
         if ready {
             let parts = GameEngine.rewardParts(run).map { "\(partLabel($0)) $\($0.amount)" }.joined(separator: " + ")
-            let tail = run.value < stretch ? "　·　" + String(localized: "到 \(Fmt.int(stretch)) 再 +$3") : ""
+            let tail = run.value < stretch ? String(localized: "　·　") + String(localized: "到 \(Fmt.int(stretch)) 再 +$3") : ""
             return Text(verbatim: parts + tail)
         }
         if run.value >= target { return Text("每關至少要選 1 手") }

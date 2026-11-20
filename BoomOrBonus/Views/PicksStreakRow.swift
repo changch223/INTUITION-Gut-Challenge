@@ -18,6 +18,8 @@ struct PicksStreakRow: View {
             HStack(spacing: 5) {
                 Text("剩 \(picks) 手")
                     .font(.system(size: 12))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(Theme.inkMuted)
                     .padding(.trailing, 4)
                 ForEach(0..<max(total, picks), id: \.self) { i in

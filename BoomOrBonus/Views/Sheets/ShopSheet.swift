@@ -88,9 +88,9 @@ struct ShopSheet: View {
         return VStack(alignment: .leading, spacing: 3) {
             (Text("下一關目標 ") + Text(Fmt.int(vm.nextTarget)).bold())
             if let boss {
-                Text("魔王「\(boss.name)」：\(boss.desc)").foregroundStyle(Theme.red).fontWeight(.medium)
+                Text("魔王「\(boss.displayName)」：\(boss.displayDescription)").foregroundStyle(Theme.red).fontWeight(.medium)
             } else if let mod {
-                Text("規則「\(mod.name)」：\(mod.desc)").foregroundStyle(Theme.sheetBody)
+                Text("規則「\(mod.displayName)」：\(mod.displayDescription)").foregroundStyle(Theme.sheetBody)
             }
         }
         .font(.system(size: 13))
@@ -113,16 +113,19 @@ struct ShopSheet: View {
             Button { vm.buyBlessing(id) } label: {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Text(verbatim: owned > 0 ? "\(id.name)（已有 \(owned)）" : id.name)
-                                .font(.system(size: 14.5, weight: .bold))
-                            Text(verbatim: id.tag)
-                                .font(.system(size: 10.5, weight: .medium))
-                                .foregroundStyle(Theme.sheetMuted)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.white.opacity(0.7), in: Capsule())
+                        let title = Text(verbatim: owned > 0 ? String(localized: "\(id.displayName)（已有 \(owned)）") : id.displayName)
+                            .font(.system(size: 14.5, weight: .bold))
+                        let tag = Text(verbatim: id.displayTag)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(Theme.sheetMuted)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.white.opacity(0.7), in: Capsule())
+                        // The tag drops under the name when a longer language does not fit both on one line.
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 6) { title; tag }
+                            VStack(alignment: .leading, spacing: 3) { title; tag }
                         }
-                        Text(verbatim: id.desc)
+                        Text(verbatim: id.displayDescription)
                             .font(.system(size: 12))
                             .foregroundStyle(Theme.sheetBody)
                             .multilineTextAlignment(.leading)
@@ -157,14 +160,14 @@ struct ShopSheet: View {
     }
 
     private func slotLabel(_ id: BlessingID, price: Int, ok: Bool) -> String {
-        var s = id.name
-        if run.has(id) { s += String(localized: "，已有 \(run.level(id)) 層") }
-        s += "，" + id.desc + "，" + String(localized: "$\(price)")
+        var parts = [id.displayName]
+        if run.has(id) { parts.append(String(localized: "已有 \(run.level(id)) 層")) }
+        parts += [id.displayDescription, String(localized: "$\(price)")]
         if !ok {
-            if vm.run.coins < price { s += String(localized: "，金幣不夠") }
-            else if !run.has(id) { s += String(localized: "，祝福已滿") }
+            if vm.run.coins < price { parts.append(String(localized: "金幣不夠")) }
+            else if !run.has(id) { parts.append(String(localized: "祝福已滿")) }
         }
-        return s
+        return Fmt.join(parts)
     }
 
     // MARK: Items
@@ -175,7 +178,7 @@ struct ShopSheet: View {
         let have = item == .shield ? run.shield : (item == .peek ? run.inventory.peek : item == .roll ? run.inventory.roll : run.inventory.dbl)
         return Button { vm.buyItem(item) } label: {
             VStack(spacing: 2) {
-                Text(verbatim: item.name).font(.system(size: 13, weight: .bold))
+                Text(verbatim: item.displayName).font(.system(size: 13, weight: .bold))
                 Text("$\(price)").font(Theme.number(14))
                 Text("有 \(have)").font(.system(size: 11)).foregroundStyle(Theme.sheetMuted)
             }
@@ -190,7 +193,8 @@ struct ShopSheet: View {
         .buttonStyle(.plain)
         .disabled(!ok)
         .opacity(ok ? 1 : 0.45)
-        .accessibilityLabel("\(item.name)，$\(price)，有 \(have) 個" + (ok ? "" : String(localized: "，金幣不夠")))
+        .accessibilityLabel(Fmt.join([item.displayName, String(localized: "$\(price)"), String(localized: "有 \(have) 個")]
+                                     + (ok ? [] : [String(localized: "金幣不夠")])))
         .accessibilityIdentifier("shop.item.\(item.rawValue)")
     }
 
