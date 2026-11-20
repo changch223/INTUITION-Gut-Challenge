@@ -48,6 +48,7 @@ Things only the owner of the accounts can do before submitting. The app itself i
 - [ ] Paste the metadata of each language from `docs/redesign/store/<locale>.md` (name, subtitle, promotional text, description, keywords, What's New). `python3 docs/redesign/store/check-lengths.py` verifies the limits.
       Locale mapping: en = English (U.S.), ja = Japanese, ru = Russian, zh-Hans = Chinese (Simplified), zh-Hant = Chinese (Traditional), zh-HK = Chinese (Traditional, Hong Kong) if you add it as a separate localization (otherwise zh-Hant covers it).
 - [ ] Upload the 6.9" screenshots from `docs/redesign/store/screenshots/<locale>/` (1320 x 2868, five per language). Re-take them from the real release flow if you change the UI.
+- [ ] Upload the 6.1" / 6.3" screenshots from `docs/redesign/store/screenshots-6.3/<locale>/` (1206 x 2622, five per language, captured natively on iPhone 17 Pro).
 - [ ] Support URL, marketing URL and privacy policy URL (the privacy policy must mention Google Mobile Ads).
 - [ ] App Review notes (see section 5).
 

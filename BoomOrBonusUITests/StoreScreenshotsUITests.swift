@@ -3,7 +3,8 @@
 //  BoomOrBonusUITests
 //
 //  Reproducible App Store screenshots: five per language, from the Debug hooks, with `-noAds` so no test ad UI shows.
-//  Run on an iPhone 17 Pro Max simulator (1320 x 2868, the 6.9" set) after
+//  Run on an iPhone 17 Pro Max simulator (1320 x 2868, the 6.9" set → screenshots/) or an iPhone 17 Pro
+//  simulator (1206 x 2622, the 6.1"/6.3" set → screenshots-6.3/) after
 //    xcrun simctl status_bar <id> override --time 9:41 --batteryState discharging --batteryLevel 100 --wifiBars 3 --cellularBars 4 --operatorName ''
 //
 //    TEST_RUNNER_STORE_SHOTS=1 TEST_RUNNER_SHOTS_DIR=<dir> xcodebuild test ... -only-testing:BoomOrBonusUITests/StoreScreenshotsUITests
