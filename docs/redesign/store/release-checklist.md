@@ -35,7 +35,8 @@ Things only the owner of the accounts can do before submitting. The app itself i
       The app has no ATT prompt, so the Device ID the SDK can read is the vendor ID (IDFV), not the advertising ID (IDFA).
       Re-check the table against Google's "Data disclosure" page (Google Mobile Ads SDK, iOS) for the exact SDK version in `Package.resolved` before submitting.
 
-- [ ] **DECISION FOR THE OWNER: tracking and ATT.** The Google manifest marks Device ID as used for tracking, so "Do you or your third-party partners use data for tracking?" must be answered consistently with how you configure ads. Choose one; the code does not implement either yet beyond (a):
+- [x] **DECIDED (2026-11-21): (a) no ATT prompt for 2.0.** Revisit (b) after launch based on ad revenue. Original decision note follows.
+- **Tracking and ATT.** The Google manifest marks Device ID as used for tracking, so "Do you or your third-party partners use data for tracking?" must be answered consistently with how you configure ads. Choose one; the code does not implement either yet beyond (a):
       - **(a) Keep no ATT prompt (current build).** Ads are served without the IDFA (non-personalized in effect; the SDK falls back to the vendor ID and contextual signals). Answer the tracking question according to Google's guidance for apps that do not request ATT (follow the "Data disclosure" page; do not claim "no data collected").
         Trade-offs: no extra permission dialog, simplest review, no `NSUserTrackingUsageDescription`; lower ad revenue because personalization is limited.
       - **(b) Add an ATT prompt** (`NSUserTrackingUsageDescription` in `Info.plist`, `ATTrackingManager.requestTrackingAuthorization` after the UMP flow) for personalized ads.
