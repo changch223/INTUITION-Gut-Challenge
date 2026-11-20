@@ -4,9 +4,8 @@ Things only the owner of the accounts can do before submitting. The app itself i
 
 ## 1. AdMob
 
-- [ ] **Interstitial ad unit.** Create an Interstitial unit in AdMob, then replace `INTERSTITIAL_UNIT_ID_TODO` in
-      `BoomOrBonus/Ads/AdConfig.swift` (release block) with its ID (`ca-app-pub-9275380963550837/XXXXXXXXXX`).
-      Until then a Release build never loads or shows an interstitial (by design; `AdConfig` rejects anything that is not a real-looking ID).
+- [x] **Interstitial ad unit.** Created in AdMob (2026-11-21); `ca-app-pub-9275380963550837/8255643279` is set in
+      `BoomOrBonus/Ads/AdConfig.swift` (release block).
 - [ ] **GDPR message.** In AdMob open Privacy & messaging, then European regulations, and create and **publish** a GDPR
       message for this app. Without a published message no consent form is ever shown (the simulator's `-umpEEA` hook
       cannot show one either), and the app loads no ads for EEA / UK users who have not consented.

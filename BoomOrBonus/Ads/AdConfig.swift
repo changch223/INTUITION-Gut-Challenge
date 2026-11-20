@@ -16,7 +16,7 @@ import Foundation
 }
 
 enum AdConfig {
-    /// Set while the real interstitial unit has not been created in AdMob yet.
+    /// Not a valid unit ID; kept so tests can check that a malformed ID is rejected.
     static let interstitialPlaceholder = "INTERSTITIAL_UNIT_ID_TODO"
 
     #if DEBUG
@@ -26,9 +26,7 @@ enum AdConfig {
     static let appOpen = "ca-app-pub-3940256099942544/5575463023"
     #else
     static let rewarded = "ca-app-pub-9275380963550837/5616789182"
-    // TODO(release): create the interstitial unit in AdMob and replace INTERSTITIAL_UNIT_ID_TODO with its ID
-    // ("ca-app-pub-9275380963550837/XXXXXXXXXX"). Until then Release never loads or shows an interstitial.
-    static let interstitial = interstitialPlaceholder
+    static let interstitial = "ca-app-pub-9275380963550837/8255643279"
     static let banner = "ca-app-pub-9275380963550837/2702683361"
     static let appOpen = "ca-app-pub-9275380963550837/4495279208"
     #endif
