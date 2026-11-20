@@ -16,4 +16,15 @@ extension UIApplication {
         }
         return root
     }
+
+    /// The view controller an ad should be presented from: the foreground scene's key window, then the
+    /// top of whatever it already presents. nil when there is no window yet (the caller treats that as "no ad").
+    static var topViewController: UIViewController? {
+        let scenes = shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first
+        var top = scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+            ?? scene?.windows.first?.rootViewController
+        while let next = top?.presentedViewController, !next.isBeingDismissed { top = next }
+        return top
+    }
 }

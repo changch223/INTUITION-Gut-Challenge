@@ -15,19 +15,21 @@
 import GoogleMobileAds
 import UIKit
 
+/// Not used since v5 (02-screens-ux.md §12): the launch / foreground ad moved to the interstitial before the result sheet.
+/// Kept for reference; nothing presents it.
 class AppOpenAdManager: NSObject, FullScreenContentDelegate {
     static let shared = AppOpenAdManager()
     
     private var appOpenAd: AppOpenAd? // 廣告實體
     private var isLoadingAd = false  // 是否正在載入中
     private var isAdBeingShown = false // 廣告是否正在顯示中
-    private let adUnitID = "ca-app-pub-9275380963550837/4495279208"
+    private let adUnitID = AdConfig.appOpen
     
     func loadAd() {
         // 如果正在載入中就直接返回
         guard !isLoadingAd else { return }
         isLoadingAd = true
-        print("loadAd")
+        debugLog("loadAd")
         
         AppOpenAd.load(
             with: adUnitID,
@@ -35,7 +37,7 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
             completionHandler: { [weak self] (ad: AppOpenAd?, error: Error?) in
                 self?.isLoadingAd = false
                 if let error = error {
-                    print("Ad failed to load: \(error.localizedDescription)")
+                    debugLog("Ad failed to load: \(error.localizedDescription)")
                     // 延遲 65 秒後重試 → 如果有錯誤，就不自動重試，錯誤處理可以交由外部決定
                     // DispatchQueue.main.asyncAfter(deadline: .now() + 65) {
                     //    self?.loadAd()
@@ -46,7 +48,7 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
                 self?.appOpenAd = ad
                 self?.appOpenAd?.fullScreenContentDelegate = self // 廣告委託（callback）
                 
-                print("self?.appOpenAd = ad")
+                debugLog("self?.appOpenAd = ad")
                 // 這裡可以直接展示廣告，或根據情況決定是否立即展示
                 // self?.showAdIfAvailable()
             }
@@ -59,12 +61,12 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
               let rootVC = windowScene.windows.first?.rootViewController,
               let ad = appOpenAd else {
             if tryCount < 5 {
-                print("Ad not ready or already being shown. Retrying (\(tryCount + 1)/5)")
+                debugLog("Ad not ready or already being shown. Retrying (\(tryCount + 1)/5)")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.showAdIfAvailable(tryCount: tryCount + 1)
                 }
             } else {
-                print("Retry limit reached, no ad available")
+                debugLog("Retry limit reached, no ad available")
             }
             return
         }
@@ -73,7 +75,7 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
         
         ad.present(from: rootVC) // 顯示廣告
         self.appOpenAd = nil // 用完清空
-        print("Ad Finish")
+        debugLog("Ad Finish")
         // AppOpenAd の delegate を設定して、表示完了後にフラグを戻すのも◎
         ad.fullScreenContentDelegate = self
     }
@@ -83,7 +85,7 @@ class AppOpenAdManager: NSObject, FullScreenContentDelegate {
 extension AppOpenAdManager {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
         isAdBeingShown = false
-        print("AppOpenAdManager Open")
+        debugLog("AppOpenAdManager Open")
     }
 }
 
