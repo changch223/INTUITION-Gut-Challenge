@@ -54,7 +54,17 @@ struct ResultSheet: View {
     }
 
     var body: some View {
-        SheetContainer {
+        // The buttons are pinned under the scrolling summary (like the shop and the rules): they stay on screen
+        // when a banner strip takes space on a small screen.
+        SheetScaffold {
+            list
+        } footer: {
+            VStack(spacing: 12) { buttons }
+        }
+    }
+
+    private var list: some View {
+        VStack(alignment: .leading, spacing: 12) {
             SheetTitle(small: headline, big: Text(verbatim: title))
 
             Text(Fmt.int(run.total))
@@ -102,10 +112,6 @@ struct ResultSheet: View {
                 SheetBody(text: Text("同一副牌在同樣的位置會發同樣的牌，哪張會爆也一樣。記住這次翻到的結果，下次就能避開。今日挑戰可以無限重打，紀錄會寫你第幾次破關。"))
                     .accessibilityIdentifier("result.dailyHint")
             }
-
-            buttons
-
-            MockBannerView()
         }
     }
 

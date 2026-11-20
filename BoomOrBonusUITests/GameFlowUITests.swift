@@ -66,6 +66,23 @@ final class GameFlowUITests: XCTestCase {
         return false
     }
 
+    /// Phase 7a: the app plays its synthesized sounds (feedback is on in UI tests). A pick takes about
+    /// (danger + 1) * 115 ms + 140 ms + 800 ms; the old AVAudioPlayer-on-main-thread stall made it 15 s.
+    func testPickFlowStaysSmoothWithSoundOn() throws {
+        let app = launch(extra: ["-picks", "9", "-shield", "0"])
+        XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))
+        var times: [TimeInterval] = []
+        for _ in 0..<5 {
+            let t0 = Date()
+            guard pick(app, 0) else { break }
+            times.append(Date().timeIntervalSince(t0))
+        }
+        print("PICK TIMES \(times.map { String(format: "%.2f", $0) })")
+        XCTAssertGreaterThanOrEqual(times.count, 3)
+        XCTAssertLessThan(times.max() ?? 0, 3.0, "one pick stalled: \(times)")
+        XCTAssertLessThan(times.reduce(0, +) / Double(max(times.count, 1)), 2.0, "\(times)")
+    }
+
     func testFailSheetShowsBothButtonsHittable() throws {
         let app = launch()
         XCTAssertTrue(app.buttons["card.0"].waitForExistence(timeout: 10))

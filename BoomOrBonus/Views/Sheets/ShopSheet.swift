@@ -4,7 +4,7 @@
 //
 //  02-screens-ux.md §4.1: coin breakdown, next-stage preview, 3 blessing slots, items,
 //  「換一批」 and 「前往第 N 關」. The buttons stay pinned under the scrolling list and the
-//  (mocked) banner ad sits at the very bottom (02 §12).
+//  banner ad strip is drawn by GameScreen below the sheet (02 §12).
 //
 
 import SwiftUI
@@ -21,10 +21,7 @@ struct ShopSheet: View {
         SheetScaffold {
             list
         } footer: {
-            VStack(spacing: 10) {
-                footer
-                MockBannerView()
-            }
+            footer
         }
     }
 

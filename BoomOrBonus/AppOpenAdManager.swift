@@ -15,13 +15,15 @@
 import GoogleMobileAds
 import UIKit
 
+/// Not used since v5 (02-screens-ux.md §12): the launch / foreground ad moved to the interstitial before the result sheet.
+/// Kept for reference; nothing presents it.
 class AppOpenAdManager: NSObject, FullScreenContentDelegate {
     static let shared = AppOpenAdManager()
     
     private var appOpenAd: AppOpenAd? // 廣告實體
     private var isLoadingAd = false  // 是否正在載入中
     private var isAdBeingShown = false // 廣告是否正在顯示中
-    private let adUnitID = "ca-app-pub-9275380963550837/4495279208"
+    private let adUnitID = AdConfig.appOpen
     
     func loadAd() {
         // 如果正在載入中就直接返回

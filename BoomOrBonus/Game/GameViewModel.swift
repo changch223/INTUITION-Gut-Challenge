@@ -86,7 +86,14 @@ final class GameViewModel {
     private(set) var reveal: Reveal?
     private(set) var isLocked = false
     private(set) var sheet: Sheet?
+    /// An ad flow is in progress (mock, rewarded or interstitial): no taps reach the game.
     private(set) var adPlaying = false
+    /// True only for the Debug 2.5 s stand-in: the game screen draws its overlay. Real ads cover the screen themselves.
+    private(set) var adIsMock = false
+    /// The rewarded ad can be shown right now (fail sheet button enabled). Published by the ad manager.
+    private(set) var rewardedReady = false
+    /// A rewarded load failed (and none succeeded since): the button says it cannot load, not that it is loading.
+    private(set) var rewardedLoadFailed = false
     private(set) var toast: Toast?
     /// The new-record pill on screen (2.4 s); more pills wait in a queue so they never overlap.
     private(set) var recordPill: RecordPill?
@@ -126,6 +133,11 @@ final class GameViewModel {
     @ObservationIgnored private let sleeper: Sleeper
     @ObservationIgnored private let reduceMotion: @MainActor () -> Bool
     @ObservationIgnored private var sound: SoundPlayer?
+    @ObservationIgnored private let ads: AdServices
+    /// Bumped whenever the flows are cancelled: a late ad callback for an older run is ignored.
+    @ObservationIgnored private var adToken = 0
+    /// Ads on screen right now; the game is silent while it is above 0 (a stale callback still releases its share).
+    @ObservationIgnored private var adSilenceDepth = 0
     @ObservationIgnored private let feedbackEnabled: Bool
     @ObservationIgnored private let randomSeed: () -> UInt32
     @ObservationIgnored private let hooks: DebugHooks
@@ -160,7 +172,8 @@ final class GameViewModel {
         randomSeed: @escaping () -> UInt32 = { UInt32.random(in: 0..<2147483647) },
         today: @escaping DayKey.Provider = { DayKey.today() },
         defaultMode: Mode = .free,
-        showsOnboarding: Bool = false
+        showsOnboarding: Bool = false,
+        ads: AdServices? = nil
     ) {
         self.store = store
         self.timing = timing
@@ -170,7 +183,10 @@ final class GameViewModel {
         self.randomSeed = randomSeed
         self.hooks = hooks
         self.clock = today
+        self.ads = ads ?? AdServices.current()
         if feedbackEnabled { self.sound = SoundPlayer(isMuted: { [store] in store.data.muted }) }
+        self.rewardedReady = self.ads.rewarded?.isReady ?? self.ads.mockRewarded
+        self.rewardedLoadFailed = self.ads.rewarded?.loadFailed ?? false
 
         var needsSave = false
         let initial: RunState
@@ -181,6 +197,7 @@ final class GameViewModel {
                 $0.deepest = 0
                 // QA launches skip the onboarding (it would cover every UI test) unless `-onboarding` asks for it.
                 $0.onboardingDone = !hooks.onboarding
+                $0.runsSinceInterstitial = max(0, hooks.adCounter ?? 0)
                 if let seed = hooks.stats { Self.seedStats(&$0, kind: seed, today: today()) }
             }
             let day = today()
@@ -207,6 +224,11 @@ final class GameViewModel {
         syncFromStore()
         if resumeRun() { needsSave = true }
         if needsSave { save() }
+        self.ads.rewarded?.onReadyChange = { [weak self] _ in
+            guard let self, let r = self.ads.rewarded else { return }
+            self.rewardedReady = r.isReady
+            self.rewardedLoadFailed = r.loadFailed
+        }
         let wantsOnboarding = launchSeed != nil ? hooks.onboarding : showsOnboarding
         if wantsOnboarding, !store.data.onboardingDone, sheet == nil, canInteract { coachStep = 0 }
     }
@@ -329,6 +351,8 @@ final class GameViewModel {
     var target: Int { GameEngine.target(run) }
     var stretch: Int { GameEngine.stretch(run) }
     var adDuration: Double { timing.ad }
+    /// 02 §12: banners only on the shop and the result sheet (and only when ads are on).
+    var bannerVisible: Bool { ads.bannersEnabled && AdPlacement.showsBanner(on: sheet) }
     var canClear: Bool { GameEngine.canClear(run) }
     var reward: Int { GameEngine.reward(run) }
     var isFirstPick: Bool { run.picks == run.stagePicksAtStart }
@@ -383,14 +407,15 @@ final class GameViewModel {
         switch ev {
         case .safe(let delta):
             reveal = .safe(delta: delta)
-            playSound("ButtonSuccess")
+            play(.safe(run.streak))
             haptic { HapticManager.shared.playSuccess() }
             if (v0 < tgt || first) && run.value >= tgt && run.picks > 0 {
+                play(.goal)
                 showToast(String(localized: "達標！可以過關，也可以拚超標 \(Fmt.int(GameEngine.stretch(run)))"), seconds: 2.4)
             }
         case .boom(let lost, let s0, let s1):
             reveal = .boom(lost: lost)
-            playSound("ButtonFail")
+            play(.boom)
             haptic { HapticManager.shared.playError() }
             if !reduced { shakeCount += 1 }
             if run.has(.grit) && s0 > 0 {
@@ -403,12 +428,12 @@ final class GameViewModel {
             }
         case .shield:
             reveal = .shield
-            playSound("Click")
+            play(.shield)
             haptic { HapticManager.shared.playClick() }
             showToast(String(localized: "保命符擋下爆炸：這手不算、不扣手數，連中保留（剩 \(run.shield) 張）"), seconds: 2.8)
         case .defuse:
             reveal = .defuse
-            playSound("Click")
+            play(.shield)
             haptic { HapticManager.shared.playClick() }
             showToast(String(localized: "拆彈：這關第一次爆炸無效，不扣手數"), seconds: 2.8)
         }
@@ -451,13 +476,13 @@ final class GameViewModel {
         if GameEngine.canClear(run) {
             await performClear()
         } else {
-            playSound("ButtonFail")
+            play(.fail)
             if !run.adUsed {
                 sheet = .fail
             } else {
                 GameEngine.failStage(&run)
                 finishRun()
-                sheet = .result
+                presentResult()
             }
         }
     }
@@ -479,13 +504,13 @@ final class GameViewModel {
         GameEngine.clearStage(&run)
         settleClear()
         let stats = recordStageClear()
-        playSound("ButtonSuccess")
+        play(.clear)
         haptic { HapticManager.shared.playSuccess() }
         if run.phase == .win { finishRun(stats: stats) } else { save(stats: stats) }
         let win = run.phase == .win
         await sleeper(win ? timing.winToSheet : timing.clearToSheet)
         guard !Task.isCancelled else { return }
-        sheet = win ? .result : .shop
+        if win { presentResult() } else { sheet = .shop }
     }
 
     /// Everything that follows `clearStage`: deals the shop shelf, records `deepest` (endless),
@@ -559,11 +584,11 @@ final class GameViewModel {
         run.coins -= Self.rerollCost
         run.shopRerolls += 1
         run.shopOffer = Shop.shopOffer(run)
-        afterShopAction()
+        afterShopAction(coin: false)
     }
 
-    private func afterShopAction() {
-        playSound("Click")
+    private func afterShopAction(coin: Bool = true) {
+        play(coin ? .coin : .item)
         haptic { HapticManager.shared.playClick() }
         save()
         // Tap lock for the shop: a double tap must not buy twice.
@@ -619,27 +644,111 @@ final class GameViewModel {
     /// 「結束這局」
     func endRun() {
         if refreshDay() { return }
-        guard sheet == .fail, run.phase == .play else { return }
+        guard sheet == .fail, run.phase == .play, !adPlaying else { return }
         GameEngine.failStage(&run)
         finishRun()
-        sheet = .result
+        presentResult()
     }
 
-    /// 「看廣告，多 2 手」: mocked ad, callback after 2.5s, once per run.
+    /// The fail sheet's button can be tapped: a rewarded ad is loaded (or, Debug with -noAds / -seed, the mock).
+    var canWatchAd: Bool { rewardedReady && !run.adUsed }
+    /// The fail sheet's button label: ready, still loading, or the load failed.
+    var adButtonState: AdButtonState { rewardedReady ? .ready : (rewardedLoadFailed ? .failed : .loading) }
+    enum AdButtonState { case ready, loading, failed }
+
+    /// 「看廣告，多 2 手」, once per run. The extra picks are granted only after the ad reports the reward and
+    /// closes; closing it early, or a failed presentation, leaves the fail sheet as it was.
     func watchAd() {
         if refreshDay() { return }
-        guard sheet == .fail, run.phase == .play, !run.adUsed, !adPlaying else { return }
+        guard sheet == .fail, run.phase == .play, !run.adUsed, !adPlaying, rewardedReady else { return }
+        if let rewarded = ads.rewarded {
+            adPlaying = true
+            adIsMock = false
+            setAdSilence(true)
+            let token = adToken
+            let silence = SilenceRelease()
+            rewarded.show { [weak self] outcome in
+                guard let self else { return }
+                // Once per presentation (a late reward after a timeout calls back twice), and even if the run
+                // was replaced meanwhile (e.g. midnight).
+                if silence.release() { self.setAdSilence(false) }
+                guard token == self.adToken else { return }
+                self.adPlaying = false
+                // `rewardedReady` follows the manager: it is already false for a spent or failed ad.
+                // After a presentation timeout the manager may report a late `.rewarded` for a player who watched it.
+                if outcome == .rewarded { self.grantAdPicks() }
+            }
+            return
+        }
+        #if DEBUG
+        guard ads.mockRewarded else { return }
         sheet = nil
         adPlaying = true
+        adIsMock = true
         flowTask = Task {
             await self.sleeper(self.timing.ad)
             guard !Task.isCancelled else { return }
             self.adPlaying = false
-            GameEngine.reviveWithAd(&self.run)
-            self.save()
-            self.dealFaces()
-            self.isLocked = false
-            self.showToast(String(localized: "多了 2 手"))
+            self.adIsMock = false
+            self.grantAdPicks()
+        }
+        #endif
+    }
+
+    private func grantAdPicks() {
+        guard run.phase == .play, !run.adUsed else { return }
+        sheet = nil
+        GameEngine.reviveWithAd(&run)
+        save()
+        dealFaces()
+        isLocked = false
+        showToast(String(localized: "多了 2 手"))
+    }
+
+    /// Mutes the game while an ad is on screen, and re-arms the audio session once it is gone.
+    /// One presentation's share of the ad-silence counter: releasing it twice does nothing.
+    private final class SilenceRelease {
+        private var released = false
+        func release() -> Bool { defer { released = true }; return !released }
+    }
+
+    private func setAdSilence(_ on: Bool) {
+        adSilenceDepth = max(0, adSilenceDepth + (on ? 1 : -1))
+        sound?.suspended = adSilenceDepth > 0
+    }
+
+    // MARK: - Result sheet and the interstitial (02 §12)
+
+    /// One interstitial per this many finished runs.
+    static let interstitialEvery = 3
+
+    /// Opens the result sheet for a run that just finished. Before it, maybe an interstitial: every third finished
+    /// run, never on the first daily attempt of the day, and only when the ad is loaded (otherwise it is skipped
+    /// silently and the counter stays due). The sheet appears when the ad closes, or at once without one.
+    private func presentResult() {
+        // A won run that goes on into endless shows its result a second time: it was counted (and maybe shown) once.
+        if run.endless { sheet = .result; return }
+        store.update { $0.runsSinceInterstitial += 1 }
+        let firstDailyAttempt = run.mode == .daily && run.attempt <= 1
+        guard let ad = ads.interstitial,
+              store.data.runsSinceInterstitial >= Self.interstitialEvery,
+              !firstDailyAttempt, ad.isReady else {
+            sheet = .result
+            return
+        }
+        adPlaying = true
+        adIsMock = false
+        setAdSilence(true)
+        let token = adToken
+        let silence = SilenceRelease()
+        ad.show { [weak self] shown in
+            guard let self else { return }
+            if silence.release() { self.setAdSilence(false) }
+            // The counter restarts only after the ad really appeared; otherwise it stays due.
+            if shown { self.store.update { $0.runsSinceInterstitial = 0 } }
+            guard token == self.adToken else { return }
+            self.adPlaying = false
+            self.sheet = .result
         }
     }
 
@@ -699,6 +808,8 @@ final class GameViewModel {
         shopLockTask?.cancel()
         shopBusy = false
         adPlaying = false
+        adIsMock = false
+        adToken += 1
         sheet = nil
         difficultyReturn = nil
     }
@@ -912,6 +1023,7 @@ final class GameViewModel {
     private func drainPills(_ generation: Int) async {
         while generation == pillGeneration, !pillQueue.isEmpty {
             recordPill = pillQueue.removeFirst()
+            play(.coin)
             await sleeper(Self.pillSeconds)
         }
         guard generation == pillGeneration else { return }
@@ -1041,7 +1153,7 @@ final class GameViewModel {
             run.pair = GameEngine.genPair(run)
             showToast(String(localized: "重抽：換了一組新牌"))
         }
-        playSound("Click")
+        play(.item)
         save()
         faces = makeFaces()
         if item == .roll { dealID += 1 }
@@ -1096,8 +1208,12 @@ final class GameViewModel {
         sound?.play(name)
     }
 
+    private func play(_ sfx: Sfx) {
+        sound?.play(sfx)
+    }
+
     private func playTick(_ step: Int) {
-        playSound("Click")
+        play(.tick(step))
     }
 
     private func haptic(_ f: () -> Void) {

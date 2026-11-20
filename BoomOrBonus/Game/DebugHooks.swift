@@ -21,6 +21,8 @@
 //    -today YYYYMMDD    fake "today" (also with -qaSave alone); see DayKey.debugToday
 //    -stats sample      fill the records page: realistic stats and 10 days of daily history (Phase 6)
 //    -stats low         one finished run with every personal record at 1, so the next run pops new-record pills
+//    -testAds           with Google's test ads on (lifts -seed / -noAds suppression); use -adCounter to make the interstitial due
+//    -adCounter N       finished runs counted towards the next interstitial (it shows when the count reaches 3)
 //    -legacySample      the 舊版紀錄 link shows three old-style records (never reads or writes the real UserDefaults)
 //
 
@@ -58,6 +60,7 @@ struct DebugHooks: Equatable {
     var onboarding = false
     var stats: StatsSeed?
     var legacySample = false
+    var adCounter: Int?
 
     enum StatsSeed: String { case sample, low }
 
@@ -84,6 +87,7 @@ struct DebugHooks: Equatable {
         h.daily = arguments.contains("-daily")
         h.onboarding = arguments.contains("-onboarding")
         h.legacySample = arguments.contains("-legacySample")
+        h.adCounter = int("-adCounter")
         if let i = arguments.firstIndex(of: "-stats"), i + 1 < arguments.count {
             h.stats = StatsSeed(rawValue: arguments[i + 1])
         }

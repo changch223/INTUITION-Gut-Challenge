@@ -20,6 +20,8 @@ struct RulesSheet: View {
     let replayTour: () -> Void
     let openLevel: () -> Void
     let openRecords: () -> Void
+    var showsPrivacyOptions = false           // UMP: only where the user must be able to change their consent
+    var openPrivacy: () -> Void = {}
     let abandon: () -> Void
     let close: () -> Void
 
@@ -93,6 +95,11 @@ struct RulesSheet: View {
                     .accessibilityIdentifier("rules.records")
             }
             .buttonStyle(SheetButtonStyle(height: 42))
+            if showsPrivacyOptions {
+                Button(action: openPrivacy) { Text("隱私設定") }
+                    .buttonStyle(SheetButtonStyle(height: 42))
+                    .accessibilityIdentifier("rules.privacy")
+            }
             HStack(spacing: 8) {
                 Button { confirming = true } label: { Text(mode == .daily ? "放棄（算一次）" : "放棄重來") }
                     .buttonStyle(SheetButtonStyle(height: 46))

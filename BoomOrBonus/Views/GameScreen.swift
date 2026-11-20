@@ -13,6 +13,13 @@ struct GameScreen: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    /// The banner strip's measured height (it is taken off the space the sheet may use); 73 until measured.
+    @State private var bannerHeight: CGFloat = AdBannerStrip.estimatedHeight
+
+    /// Space the sheet gives up: only while the strip really draws something (no consent yet, or a failed load, takes none).
+    private var bannerReserve: CGFloat {
+        vm.bannerVisible && ConsentManager.shared.canRequestAds && !AdConfig.suppressed ? bannerHeight : 0
+    }
 
     init() {
         _vm = State(initialValue: GameViewModel.live)
@@ -30,9 +37,19 @@ struct GameScreen: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .accessibilityHidden(true)
-                VStack(spacing: 0) {
-                    Spacer(minLength: 58)          // room for the mode switch above the scrim
-                    sheetContent
+                GeometryReader { geo in
+                    // On an iPhone SE the navigation container is laid out about 5 pt past the bottom of the screen,
+                    // so the sheet area is what is really on screen: the screen's bottom minus where the area starts.
+                    let area = min(geo.size.height,
+                                   UIScreen.main.bounds.height - geo.safeAreaInsets.bottom - geo.frame(in: .global).minY)
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 58)          // room for the mode switch above the scrim
+                        sheetContent
+                            .environment(\.sheetMaxHeight, max(0, area - 58 - bannerReserve))
+                        if vm.bannerVisible { AdBannerStrip(onTotalHeight: { bannerHeight = $0 }) }
+                    }
+                    .frame(width: geo.size.width, height: area)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
                 .transition(reduceMotion ? .opacity : .move(edge: .bottom))
                 .accessibilityAddTraits(.isModal)
@@ -48,7 +65,7 @@ struct GameScreen: View {
                 Spacer(minLength: 0)
             }
 
-            if vm.adPlaying {
+            if vm.adPlaying && vm.adIsMock {
                 AdMockView(duration: vm.adDuration)
                     .transition(.opacity)
             }
@@ -85,7 +102,10 @@ struct GameScreen: View {
         }
         .onChange(of: scenePhase) { _, phase in
             // 03 §2.1: back from the background after midnight, yesterday's daily run is void.
-            if phase == .active { vm.refreshDay() }
+            if phase == .active {
+                vm.refreshDay()
+                ConsentManager.shared.appBecameActive()
+            }
         }
         .animation(.easeOut(duration: 0.22), value: vm.toast)
         .animation(.easeOut(duration: reduceMotion ? 0.1 : 0.22), value: vm.recordPill)
@@ -98,6 +118,7 @@ struct GameScreen: View {
         .onChange(of: vm.toast) { _, toast in
             if let toast { AccessibilityNotification.Announcement(toast.text).post() }
         }
+        .task { ConsentManager.shared.start() }      // UMP consent, then the ads SDK; never blocks the game
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
         .navigationBarHidden(true)
@@ -220,6 +241,7 @@ struct GameScreen: View {
         case .fail:
             FailSheet(stage: vm.run.stage,
                       missing: max(0, vm.target - vm.run.value),
+                      adState: vm.adButtonState,
                       endRun: { vm.endRun() },
                       watchAd: { vm.watchAd() })
         case .shop:
@@ -248,6 +270,8 @@ struct GameScreen: View {
                        replayTour: { vm.replayOnboarding() },
                        openLevel: { vm.openDifficulty() },
                        openRecords: { vm.openDashboard() },
+                       showsPrivacyOptions: ConsentManager.shared.privacyOptionsRequired,
+                       openPrivacy: { ConsentManager.shared.presentPrivacyOptions() },
                        abandon: { vm.abandon() },
                        close: { vm.closeRules() })
         case .dashboard:
@@ -260,7 +284,7 @@ struct GameScreen: View {
     }
 }
 
-/// Stand-in for the rewarded ad (02 §12: prototype shows a 2.5s mock screen).
+/// Debug-only stand-in for the rewarded ad (UI tests with -noAds / -seed; the prototype's 2.5s mock screen).
 private struct AdMockView: View {
     let duration: Double
     @State private var progress = 0.0

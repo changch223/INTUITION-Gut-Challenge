@@ -49,15 +49,29 @@ struct SheetBody: View {
     }
 }
 
+private struct SheetMaxHeightKey: EnvironmentKey { static let defaultValue: CGFloat? = nil }
+
+extension EnvironmentValues {
+    /// The most height a sheet may take (what GameScreen leaves after the mode switch and the banner strip).
+    /// Sheets that scroll size their scroll area to it explicitly: a layout that only "shrinks if it has to" let
+    /// the sheet push the banner strip off an iPhone SE screen.
+    var sheetMaxHeight: CGFloat? {
+        get { self[SheetMaxHeightKey.self] }
+        set { self[SheetMaxHeightKey.self] = newValue }
+    }
+}
+
 /// Bottom panel container: cream, rounded top, scrolls only when the content does not fit.
 struct SheetContainer<Content: View>: View {
     @ViewBuilder let content: Content
+    @Environment(\.sheetMaxHeight) private var maxHeight
 
     var body: some View {
         ViewThatFits(in: .vertical) {
             inner
-            ScrollView { inner }
+            ScrollView { inner }.frame(height: maxHeight)
         }
+        .frame(maxHeight: maxHeight)
         .background {
             Theme.sheetBg
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
@@ -68,21 +82,6 @@ struct SheetContainer<Content: View>: View {
     private var inner: some View {
         VStack(alignment: .leading, spacing: 12) { content }
             .padding(.horizontal, 18).padding(.top, 22).padding(.bottom, 20)
-    }
-}
-
-/// Stand-in for the banner ad (02 §12: banners live only in the shop and on the result sheet).
-/// Phase 7 swaps this for the real `BannerAdView`.
-struct MockBannerView: View {
-    var body: some View {
-        Text("廣告（模擬）")
-            .font(.system(size: 11.5, weight: .medium))
-            .foregroundStyle(Theme.sheetMuted)
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
-            .background(Theme.sheetButton.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityHidden(true)
-            .accessibilityIdentifier("bannerMock")
     }
 }
 
@@ -98,6 +97,16 @@ struct SheetLabel: View {
 }
 
 private struct ListHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct HeaderHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct FooterHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
@@ -124,6 +133,18 @@ struct SheetScaffold<Header: View, List: View, Footer: View>: View {
 
     @State private var listHeight: CGFloat = 0
     @State private var visibleHeight: CGFloat = 0
+    @State private var headerHeight: CGFloat = 0
+    @State private var footerHeight: CGFloat = 0
+    @Environment(\.sheetMaxHeight) private var maxHeight
+
+    /// The scroll area's height when the sheet has to give up space (banner strip, small screen): everything the
+    /// scroll area does not own (paddings, gaps, header, footer) is taken off the sheet's maximum.
+    private var scrollCap: CGFloat? {
+        guard let maxHeight, listHeight > 0, footerHeight > 0 else { return nil }
+        let gaps: CGFloat = header == nil ? 10 : 20
+        let cap = maxHeight - (22 + 12) - gaps - headerHeight - footerHeight
+        return cap < listHeight ? max(60, cap) : nil
+    }
 
     /// iPhone SE class screens: callers use tighter spacing.
     static var isShortScreen: Bool { UIScreen.main.bounds.height < 740 }
@@ -132,7 +153,10 @@ struct SheetScaffold<Header: View, List: View, Footer: View>: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            if let header { header }
+            if let header {
+                header.background(GeometryReader { Color.clear.preference(key: HeaderHeightKey.self, value: $0.size.height) })
+                    .onPreferenceChange(HeaderHeightKey.self) { headerHeight = $0 }
+            }
             ScrollView {
                 list
                     .padding(.bottom, scrollable ? 18 : 0)
@@ -140,7 +164,8 @@ struct SheetScaffold<Header: View, List: View, Footer: View>: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .onPreferenceChange(ListHeightKey.self) { listHeight = $0 }
-            .frame(maxHeight: listHeight > 0 ? listHeight : .infinity)
+            .frame(minHeight: 0, maxHeight: listHeight > 0 ? listHeight : .infinity)
+            .frame(height: scrollCap)
             .background(GeometryReader { Color.clear.preference(key: VisibleHeightKey.self, value: $0.size.height) })
             .onPreferenceChange(VisibleHeightKey.self) { visibleHeight = $0 }
             .overlay(alignment: .bottom) {
@@ -152,6 +177,8 @@ struct SheetScaffold<Header: View, List: View, Footer: View>: View {
                 }
             }
             footer
+                .background(GeometryReader { Color.clear.preference(key: FooterHeightKey.self, value: $0.size.height) })
+                .onPreferenceChange(FooterHeightKey.self) { footerHeight = $0 }
         }
         .padding(.horizontal, 18).padding(.top, 22).padding(.bottom, 12)
         .background {
